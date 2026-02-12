@@ -217,8 +217,13 @@ function generatePalette(inputs: BrandInputs): { name: string; hex: string; role
   const casualFormal = s[4].value / 100;
   const loudQuiet = s[5].value / 100;
 
+  // Random jitter so regenerating without changes gives variety
+  const jitter = () => (Math.random() - 0.5) * 12; // ±6° hue
+  const satJitter = () => (Math.random() - 0.5) * 8; // ±4% sat
+  const lightJitter = () => (Math.random() - 0.5) * 6; // ±3% light
+
   // 1. Raw hue from industry
-  let rawHue = INDUSTRY_HUES[inputs.industry] ?? 200;
+  let rawHue = (INDUSTRY_HUES[inputs.industry] ?? 200) + jitter();
 
   // 2. Value shifts (subtle)
   if (inputs.values.length > 0) {
@@ -236,22 +241,22 @@ function generatePalette(inputs: BrandInputs): { name: string; hex: string; role
   const primaryHue = ((anchorHue + clamp(nudge, -15, 15)) % 360 + 360) % 360;
 
   // 5. Primary S/L within golden ratio constraints (sat 55-75, light 40-55)
-  let primarySat = lerp(75, 55, youngMature) + lerp(5, -5, playfulSerious) + lerp(5, -5, loudQuiet);
-  primarySat = clamp(primarySat, 55, 75);
-  let primaryLight = lerp(55, 40, massElite);
-  primaryLight = clamp(primaryLight, 40, 55);
+  let primarySat = lerp(75, 55, youngMature) + lerp(5, -5, playfulSerious) + lerp(5, -5, loudQuiet) + satJitter();
+  primarySat = clamp(primarySat, 52, 78);
+  let primaryLight = lerp(55, 40, massElite) + lightJitter();
+  primaryLight = clamp(primaryLight, 38, 57);
 
   // 6. Secondary: analogous 25-35° away (sat 35-55, light 45-60)
   const secOffset = lerp(25, 35, casualFormal) * (casualFormal > 0.5 ? -1 : 1);
   const secHue = ((primaryHue + secOffset) % 360 + 360) % 360;
-  let secSat = clamp(primarySat - lerp(15, 25, youngMature), 35, 55);
-  let secLight = clamp(lerp(60, 45, massElite), 45, 60);
+  let secSat = clamp(primarySat - lerp(15, 25, youngMature) + satJitter(), 32, 58);
+  let secLight = clamp(lerp(60, 45, massElite) + lightJitter(), 43, 62);
 
   // 7. Accent: complementary/triadic 120-180° (sat 70-90, light 45-55)
   const accentOffset = lerp(120, 180, playfulSerious);
   const accentHue = ((primaryHue + accentOffset) % 360 + 360) % 360;
-  let accentSat = clamp(primarySat + 15, 70, 90);
-  let accentLight = clamp(lerp(55, 45, loudQuiet), 45, 55);
+  let accentSat = clamp(primarySat + 15 + satJitter(), 67, 93);
+  let accentLight = clamp(lerp(55, 45, loudQuiet) + lightJitter(), 43, 57);
 
   // 8. Background: same hue family, near-white (sat 5-15, light 95-98)
   const bgHue = primaryHue;
@@ -339,7 +344,9 @@ function generateBrand(inputs: BrandInputs): BrandResult {
   else fontVibe = "clean";
 
   const matchingFonts = FONT_PAIRS.filter(f => f.vibe === fontVibe);
-  const fonts = matchingFonts.length > 0 ? pick(matchingFonts) : pick(FONT_PAIRS);
+  // 70% chance matching vibe, 30% chance any font for variety on regenerate
+  const fontPool = matchingFonts.length > 0 && Math.random() > 0.3 ? matchingFonts : FONT_PAIRS;
+  const fonts = pick(fontPool);
 
   const traits: string[] = [];
   if (friendAuth < 40) traits.push("Approachable");
