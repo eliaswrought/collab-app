@@ -315,6 +315,9 @@ export default function Home() {
   const [generating, setGenerating] = useState(false);
   const [restored, setRestored] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoLoading, setLogoLoading] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
   const totalSteps = 6;
 
@@ -367,6 +370,19 @@ export default function Home() {
     }));
   }, []);
 
+  const buildLogoUrl = (brand: BrandResult, seed?: number) => {
+    const s = seed ?? Math.floor(Math.random() * 1000000);
+    const colorDesc = brand.colors.slice(0, 3).map(c => c.name).join(", ");
+    const prompt = `${brand.name} logo, ${inputs.industry} brand, ${brand.personality.join(", ")}, colors: ${colorDesc}, minimal logo, flat design, vector style, clean, professional, white background`;
+    return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&nologo=true&seed=${s}`;
+  };
+
+  const setLogoFromBrand = (brand: BrandResult) => {
+    setLogoError(false);
+    setLogoLoading(true);
+    setLogoUrl(buildLogoUrl(brand));
+  };
+
   const handleGenerate = () => {
     setGenerating(true);
     setTimeout(() => {
@@ -374,6 +390,7 @@ export default function Home() {
       loadGoogleFonts([brand.fonts.heading, brand.fonts.body]);
       setResult(brand);
       saveBrand(brand);
+      setLogoFromBrand(brand);
       setGenerating(false);
       setStep(totalSteps);
     }, 1500);
@@ -386,8 +403,16 @@ export default function Home() {
       loadGoogleFonts([brand.fonts.heading, brand.fonts.body]);
       setResult(brand);
       saveBrand(brand);
+      setLogoFromBrand(brand);
       setGenerating(false);
     }, 800);
+  };
+
+  const handleRegenerateLogo = () => {
+    if (!result) return;
+    setLogoError(false);
+    setLogoLoading(true);
+    setLogoUrl(buildLogoUrl(result, Math.floor(Math.random() * 1000000)));
   };
 
   const reset = () => {
@@ -582,7 +607,38 @@ export default function Home() {
         {step === totalSteps && result && (
           <StepTransition>
             <div className="space-y-6 w-full">
-              {/* Logo Preview */}
+              {/* AI Generated Logo */}
+              {logoUrl && !logoError && (
+                <Card className="bg-neutral-900/50 border-neutral-800 text-center">
+                  <CardContent className="p-4 sm:p-6">
+                    <p className="text-xs text-neutral-500 uppercase tracking-wider mb-3">AI Generated Logo (Preview)</p>
+                    <div className="relative mx-auto w-48 h-48 sm:w-64 sm:h-64 rounded-xl overflow-hidden bg-neutral-800">
+                      {logoLoading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-neutral-800 z-10">
+                          <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      )}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={logoUrl}
+                        alt={`${result.name} AI logo`}
+                        className="w-full h-full object-contain"
+                        onLoad={() => setLogoLoading(false)}
+                        onError={() => { setLogoLoading(false); setLogoError(true); }}
+                      />
+                    </div>
+                    <Button
+                      onClick={handleRegenerateLogo}
+                      variant="ghost"
+                      className="mt-3 text-sm text-neutral-400 hover:text-white"
+                    >
+                      🎲 Regenerate Logo
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Fallback Unicode Logo */}
               <Card className="bg-neutral-900/50 border-neutral-800 text-center">
                 <CardContent className="p-6 sm:p-8">
                   <div className="text-4xl sm:text-5xl mb-2">{result.logoIcon}</div>
