@@ -393,7 +393,7 @@ export default function Home() {
             <button
               onClick={() => inputs.name.trim() && setStep(1)}
               disabled={!inputs.name.trim()}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl disabled:opacity-20 disabled:cursor-not-allowed sm:hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer shadow-md shadow-purple-500/20"
             >
               Next →
             </button>
@@ -429,7 +429,7 @@ export default function Home() {
             <button
               onClick={() => inputs.values.length > 0 && setStep(3)}
               disabled={inputs.values.length === 0}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl disabled:opacity-20 disabled:cursor-not-allowed sm:hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer shadow-md shadow-purple-500/20"
             >
               Next →
             </button>
@@ -447,7 +447,7 @@ export default function Home() {
             <button
               onClick={() => inputs.audiences.length > 0 && setStep(4)}
               disabled={inputs.audiences.length === 0}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl disabled:opacity-20 disabled:cursor-not-allowed sm:hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer shadow-md shadow-purple-500/20"
             >
               Next →
             </button>
@@ -467,7 +467,7 @@ export default function Home() {
             ))}
             <button
               onClick={() => setStep(5)}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity"
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl sm:hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer shadow-md shadow-purple-500/20"
             >
               Next →
             </button>
@@ -498,7 +498,7 @@ export default function Home() {
             <button
               onClick={handleGenerate}
               disabled={generating}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl disabled:opacity-20 disabled:cursor-not-allowed sm:hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer shadow-md shadow-purple-500/20"
             >
               {generating ? "🍫 Hunting for truffles..." : "Generate Brand 🍫"}
             </button>
@@ -596,7 +596,7 @@ export default function Home() {
               </button>
               <button
                 onClick={reset}
-                className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity"
+                className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl sm:hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer shadow-md shadow-purple-500/20"
               >
                 🍫 New Brand
               </button>
