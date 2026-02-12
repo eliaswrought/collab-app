@@ -155,24 +155,24 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-6">
+    <main className="min-h-screen flex flex-col items-center p-4 pt-12 sm:p-6 sm:pt-16">
       {/* Header */}
-      <div className="mb-12 text-center">
-        <h1 className="text-5xl font-bold tracking-tight mb-2">
+      <div className="mb-8 sm:mb-12 text-center">
+        <h1 className="text-3xl sm:text-5xl font-bold tracking-tight mb-1">
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-orange-400">
             BrandForge
           </span>
         </h1>
-        <p className="text-neutral-400 text-lg">Generate a complete brand identity in seconds</p>
+        <p className="text-neutral-400 text-sm sm:text-lg">Generate a complete brand identity in seconds</p>
       </div>
 
       {/* Step Indicator */}
       {step < 4 && (
-        <div className="flex gap-2 mb-8">
+        <div className="flex gap-2 mb-6">
           {[0, 1, 2, 3].map((s) => (
             <div
               key={s}
-              className={`h-1.5 w-12 rounded-full transition-colors ${
+              className={`h-1.5 w-10 sm:w-12 rounded-full transition-colors ${
                 s <= step ? "bg-gradient-to-r from-purple-400 to-pink-500" : "bg-neutral-800"
               }`}
             />
@@ -206,12 +206,12 @@ export default function Home() {
         {step === 1 && (
           <div className="space-y-4 animate-fade-in">
             <label className="block text-sm text-neutral-400 mb-1">What industry?</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {INDUSTRIES.map((ind) => (
                 <button
                   key={ind}
                   onClick={() => { setIndustry(ind); setStep(2); }}
-                  className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
+                  className={`px-3 py-3 rounded-lg text-sm border transition-colors ${
                     industry === ind
                       ? "border-purple-500 bg-purple-500/20 text-purple-300"
                       : "border-neutral-800 bg-neutral-900 text-neutral-300 hover:border-neutral-600"
@@ -233,7 +233,7 @@ export default function Home() {
                 <button
                   key={v}
                   onClick={() => { setVibe(v); setStep(3); }}
-                  className={`px-4 py-3 rounded-lg text-sm border transition-colors ${
+                  className={`px-4 py-4 rounded-lg text-sm border transition-colors ${
                     vibe === v
                       ? "border-purple-500 bg-purple-500/20 text-purple-300"
                       : "border-neutral-800 bg-neutral-900 text-neutral-300 hover:border-neutral-600"
@@ -268,11 +268,11 @@ export default function Home() {
         )}
 
         {step === 4 && result && (
-          <div className="space-y-8 animate-fade-in max-w-2xl">
+          <div className="space-y-6 animate-fade-in w-full">
             {/* Logo Preview */}
-            <div className="text-center p-8 rounded-2xl border border-neutral-800 bg-neutral-900/50">
-              <div className="text-5xl mb-2">{result.logoIcon}</div>
-              <h2 className="text-3xl font-bold tracking-widest" style={{ fontFamily: result.fonts.heading }}>
+            <div className="text-center p-6 sm:p-8 rounded-2xl border border-neutral-800 bg-neutral-900/50">
+              <div className="text-4xl sm:text-5xl mb-2">{result.logoIcon}</div>
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-widest" style={{ fontFamily: result.fonts.heading }}>
                 {result.logoText}
               </h2>
               <p className="text-neutral-400 mt-2 italic" style={{ fontFamily: result.fonts.body }}>
@@ -283,18 +283,18 @@ export default function Home() {
             {/* Colors */}
             <div>
               <h3 className="text-sm text-neutral-400 mb-3 uppercase tracking-wider">Color Palette</h3>
-              <div className="flex gap-2 rounded-xl overflow-hidden">
+              <div className="flex gap-1.5 sm:gap-2 rounded-xl overflow-hidden">
                 {result.colors.map((c) => (
                   <div key={c.hex} className="flex-1 group cursor-pointer" onClick={() => navigator.clipboard.writeText(c.hex)}>
-                    <div className="h-20 transition-transform group-hover:scale-105" style={{ backgroundColor: c.hex }} />
-                    <div className="bg-neutral-900 px-2 py-2 text-center">
-                      <p className="text-xs text-neutral-300">{c.name}</p>
-                      <p className="text-xs text-neutral-500 font-mono">{c.hex}</p>
+                    <div className="h-16 sm:h-20 transition-transform group-hover:scale-105" style={{ backgroundColor: c.hex }} />
+                    <div className="bg-neutral-900 px-1 sm:px-2 py-1.5 sm:py-2 text-center">
+                      <p className="text-[10px] sm:text-xs text-neutral-300 truncate">{c.name}</p>
+                      <p className="text-[10px] sm:text-xs text-neutral-500 font-mono">{c.hex}</p>
                     </div>
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-neutral-600 mt-1">Click a color to copy hex</p>
+              <p className="text-xs text-neutral-600 mt-1">Tap a color to copy hex</p>
             </div>
 
             {/* Typography */}
