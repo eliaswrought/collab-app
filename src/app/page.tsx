@@ -97,62 +97,100 @@ function hslToHex(h: number, s: number, l: number): string {
 
 function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
 
-/* ── Color naming ── */
-function nameColor(h: number, s: number, l: number): string {
-  // Very light / very dark overrides
-  if (l > 90) {
-    const tints: Record<string, string> = {
-      red: "Rose White", orange: "Peach Cream", yellow: "Ivory", green: "Mint Cream",
-      cyan: "Ice", blue: "Frost", purple: "Lavender Mist", pink: "Cotton", neutral: "Snow",
-    };
-    return tints[hueFamily(h)] || "Cloud";
+/* ── Curated anchor hues — ~50 designer-approved base hues ── */
+const ANCHOR_HUES = [
+  0, 8, 15, 25, 35, 45, 55, 90, 100, 120, 135, 145, 155, 170, 180,
+  195, 205, 210, 220, 225, 235, 240, 250, 260, 270, 280, 290, 300,
+  310, 320, 330, 340, 345, 350, 355,
+];
+
+function snapToAnchor(hue: number): number {
+  hue = ((hue % 360) + 360) % 360;
+  let best = ANCHOR_HUES[0], bestDist = 360;
+  for (const a of ANCHOR_HUES) {
+    const d = Math.min(Math.abs(hue - a), 360 - Math.abs(hue - a));
+    if (d < bestDist) { bestDist = d; best = a; }
   }
-  if (l < 18) {
-    const darks: Record<string, string> = {
-      red: "Burgundy Night", orange: "Espresso", yellow: "Dark Amber", green: "Forest Night",
-      cyan: "Deep Sea", blue: "Midnight", purple: "Deep Plum", pink: "Wine Dark", neutral: "Onyx",
-    };
-    return darks[hueFamily(h)] || "Ink";
-  }
-
-  const family = hueFamily(h);
-  const isHigh = s > 60;
-  const isMed = s > 30;
-  const isBright = l > 55;
-
-  const names: Record<string, [string, string, string, string]> = {
-    // [highSat+bright, highSat+dark, lowSat+bright, lowSat+dark]
-    red:     ["Scarlet", "Crimson", "Dusty Rose", "Maroon"],
-    orange:  ["Tangerine", "Burnt Orange", "Peach", "Sienna"],
-    yellow:  ["Sunshine", "Amber", "Buttercream", "Dark Gold"],
-    green:   ["Emerald", "Forest", "Sage", "Moss"],
-    cyan:    ["Turquoise", "Teal", "Seafoam", "Slate Teal"],
-    blue:    ["Royal Blue", "Navy", "Powder Blue", "Steel"],
-    purple:  ["Violet", "Deep Purple", "Lavender", "Plum"],
-    pink:    ["Hot Pink", "Magenta", "Blush", "Mauve"],
-    neutral: ["Silver", "Charcoal", "Ash", "Graphite"],
-  };
-
-  const set = names[family] || names.neutral;
-  if (isHigh && isBright) return set[0];
-  if (isHigh) return set[1];
-  if (isMed && isBright) return set[2];
-  return set[3];
+  return best;
 }
 
-function hueFamily(h: number): string {
+/* ── Banned zone enforcement ── */
+function enforceBans(h: number, s: number, l: number): [number, number, number] {
   h = ((h % 360) + 360) % 360;
-  if (h < 15 || h >= 345) return "red";
-  if (h < 40) return "orange";
-  if (h < 70) return "yellow";
-  if (h < 160) return "green";
-  if (h < 195) return "cyan";
-  if (h < 260) return "blue";
-  if (h < 310) return "purple";
-  return "pink";
+  // Yellow-green (65-85) at high saturation → clamp sat
+  if (h >= 65 && h <= 85 && s > 50) s = 48;
+  // Pure yellow (50-60) as primary → shift to gold/amber
+  if (h >= 50 && h <= 60) h = h >= 55 ? 45 : 35;
+  // Neon: sat>85 AND light>60 → cap lightness
+  if (s > 85 && l > 60) l = 58;
+  // Muddy brown: hue 20-40, sat 20-40%, light 30-45% → boost sat
+  if (h >= 20 && h <= 40 && s >= 20 && s <= 40 && l >= 30 && l <= 45) s = 55;
+  return [h, s, l];
 }
 
-/* ── Algorithmic palette generation ── */
+/* ── Color naming — evocative designer-quality names ── */
+function nameColor(h: number, s: number, l: number): string {
+  h = ((h % 360) + 360) % 360;
+
+  // Near-white overrides
+  if (l > 90) {
+    if (h < 15 || h >= 345) return "Rosewater";
+    if (h < 40) return "Peach Cream";
+    if (h < 70) return "Ivory";
+    if (h < 160) return "Mint Cream";
+    if (h < 195) return "Glacier";
+    if (h < 260) return "Frost";
+    if (h < 310) return "Lavender Mist";
+    return "Blush Whisper";
+  }
+  // Near-black overrides
+  if (l < 20) {
+    if (h < 15 || h >= 345) return "Oxblood";
+    if (h < 40) return "Espresso";
+    if (h < 70) return "Dark Amber";
+    if (h < 160) return "Pine Night";
+    if (h < 195) return "Abyss";
+    if (h < 260) return "Midnight";
+    if (h < 310) return "Deep Plum";
+    return "Wine Dark";
+  }
+
+  // Rich naming by hue range + sat/light
+  const hi = s > 60, md = s > 35, br = l > 52;
+  // Reds (345-360, 0-15)
+  if (h < 15 || h >= 345) {
+    if (h >= 345 || h < 5) return hi ? (br ? "Scarlet" : "Crimson") : (br ? "Dusty Rose" : "Garnet");
+    return hi ? (br ? "Vermillion" : "Carmine") : (br ? "Coral Blush" : "Rosewood");
+  }
+  // Oranges (15-40)
+  if (h < 25) return hi ? (br ? "Tangerine" : "Burnt Sienna") : (br ? "Peach" : "Terracotta");
+  if (h < 40) return hi ? (br ? "Amber" : "Copper") : (br ? "Sandy Gold" : "Umber");
+  // Yellows/golds (40-65)
+  if (h < 50) return hi ? (br ? "Marigold" : "Dark Gold") : (br ? "Champagne" : "Antique Bronze");
+  if (h < 65) return hi ? (br ? "Sunshine" : "Saffron") : (br ? "Buttercream" : "Khaki");
+  // Yellow-greens/greens (65-160)
+  if (h < 100) return hi ? (br ? "Chartreuse" : "Olive") : (br ? "Sage" : "Moss");
+  if (h < 130) return hi ? (br ? "Emerald" : "Forest") : (br ? "Seafoam" : "Fern");
+  if (h < 150) return hi ? (br ? "Jade" : "Malachite") : (br ? "Celadon" : "Hunter");
+  if (h < 160) return hi ? (br ? "Spring" : "Viridian") : (br ? "Pistachio" : "Bottle Green");
+  // Cyans/teals (160-195)
+  if (h < 175) return hi ? (br ? "Turquoise" : "Teal") : (br ? "Aquamarine" : "Petrol");
+  if (h < 195) return hi ? (br ? "Cyan" : "Deep Teal") : (br ? "Powder Teal" : "Slate Teal");
+  // Blues (195-260)
+  if (h < 210) return hi ? (br ? "Cerulean" : "Ocean") : (br ? "Cornflower" : "Cadet");
+  if (h < 225) return hi ? (br ? "Royal Blue" : "Cobalt") : (br ? "Periwinkle" : "Steel");
+  if (h < 240) return hi ? (br ? "Sapphire" : "Navy") : (br ? "Powder Blue" : "Denim");
+  if (h < 260) return hi ? (br ? "Indigo" : "Ink Blue") : (br ? "Wisteria" : "Slate Blue");
+  // Purples (260-310)
+  if (h < 275) return hi ? (br ? "Violet" : "Royal Purple") : (br ? "Lavender" : "Plum");
+  if (h < 290) return hi ? (br ? "Amethyst" : "Deep Purple") : (br ? "Lilac" : "Aubergine");
+  if (h < 310) return hi ? (br ? "Orchid" : "Byzantium") : (br ? "Thistle" : "Raisin");
+  // Pinks/magentas (310-345)
+  if (h < 325) return hi ? (br ? "Magenta" : "Fuchsia") : (br ? "Blush" : "Mauve");
+  return hi ? (br ? "Hot Pink" : "Raspberry") : (br ? "Rose Quartz" : "Mulberry");
+}
+
+/* ── Algorithmic palette generation (curated) ── */
 const INDUSTRY_HUES: Record<string, number> = {
   "Technology": 210, "Food & Beverage": 25, "Health & Wellness": 145, "Fashion": 330,
   "Finance": 215, "Education": 195, "Real Estate": 35, "Travel": 180,
@@ -168,65 +206,77 @@ const VALUE_HUE_SHIFTS: Record<string, number> = {
   "Heritage": -5,
 };
 
+function clamp(v: number, min: number, max: number) { return Math.max(min, Math.min(max, v)); }
+
 function generatePalette(inputs: BrandInputs): { name: string; hex: string; role: string }[] {
   const s = inputs.sliders;
-  const friendAuth = s[0].value / 100;    // 0=friend, 1=authority
-  const youngMature = s[1].value / 100;   // 0=young, 1=mature
-  const playfulSerious = s[2].value / 100; // 0=playful, 1=serious
-  const massElite = s[3].value / 100;     // 0=mass, 1=elite
-  const casualFormal = s[4].value / 100;  // 0=casual, 1=formal
-  const loudQuiet = s[5].value / 100;     // 0=loud, 1=quiet
+  const friendAuth = s[0].value / 100;
+  const youngMature = s[1].value / 100;
+  const playfulSerious = s[2].value / 100;
+  const massElite = s[3].value / 100;
+  const casualFormal = s[4].value / 100;
+  const loudQuiet = s[5].value / 100;
 
-  // 1. Base hue from industry
-  let baseHue = INDUSTRY_HUES[inputs.industry] ?? 200;
+  // 1. Raw hue from industry
+  let rawHue = INDUSTRY_HUES[inputs.industry] ?? 200;
 
-  // 2. Shift hue by values (averaged, capped)
+  // 2. Value shifts (subtle)
   if (inputs.values.length > 0) {
     const shift = inputs.values.reduce((sum, v) => sum + (VALUE_HUE_SHIFTS[v] ?? 0), 0) / inputs.values.length;
-    baseHue += shift * 0.4; // subtle influence
+    rawHue += shift * 0.4;
   }
 
-  // 3. Sliders shift hue slightly: formal→cooler, casual→warmer
-  baseHue += (casualFormal - 0.5) * -15; // formal pushes cool
-  baseHue += (friendAuth - 0.5) * 10;    // authority pushes slightly cooler
+  // 3. Slider nudges
+  rawHue += (casualFormal - 0.5) * -15;
+  rawHue += (friendAuth - 0.5) * 10;
 
-  baseHue = ((baseHue % 360) + 360) % 360;
+  // 4. Snap to nearest anchor hue, then nudge ±15° for personality
+  const anchorHue = snapToAnchor(rawHue);
+  const nudge = (playfulSerious - 0.5) * 10 + (youngMature - 0.5) * -8;
+  const primaryHue = ((anchorHue + clamp(nudge, -15, 15)) % 360 + 360) % 360;
 
-  // 4. Derive saturation & lightness parameters from sliders
-  const baseSat = lerp(75, 45, youngMature) // young=vivid, mature=muted
-    + lerp(15, -15, playfulSerious)          // playful=more sat
-    + lerp(10, -10, loudQuiet);              // loud=more sat
-  const primarySat = Math.max(30, Math.min(95, baseSat + lerp(-5, 10, friendAuth)));
-  const primaryLight = lerp(52, 42, massElite); // elite = darker, richer primary
+  // 5. Primary S/L within golden ratio constraints (sat 55-75, light 40-55)
+  let primarySat = lerp(75, 55, youngMature) + lerp(5, -5, playfulSerious) + lerp(5, -5, loudQuiet);
+  primarySat = clamp(primarySat, 55, 75);
+  let primaryLight = lerp(55, 40, massElite);
+  primaryLight = clamp(primaryLight, 40, 55);
 
-  // 5. Secondary: analogous hue
-  const secDirection = casualFormal > 0.5 ? -30 : 30; // formal→cooler analog, casual→warmer
-  const secHue = baseHue + secDirection;
-  const secSat = Math.max(20, primarySat - 15);
-  const secLight = lerp(55, 45, massElite);
+  // 6. Secondary: analogous 25-35° away (sat 35-55, light 45-60)
+  const secOffset = lerp(25, 35, casualFormal) * (casualFormal > 0.5 ? -1 : 1);
+  const secHue = ((primaryHue + secOffset) % 360 + 360) % 360;
+  let secSat = clamp(primarySat - lerp(15, 25, youngMature), 35, 55);
+  let secLight = clamp(lerp(60, 45, massElite), 45, 60);
 
-  // 6. Accent: complementary/triadic
-  const accentOffset = lerp(120, 180, playfulSerious); // playful→triadic, serious→complement
-  const accentHue = baseHue + accentOffset;
-  const accentSat = Math.min(95, primarySat + 10);
-  const accentLight = lerp(55, 48, loudQuiet);
+  // 7. Accent: complementary/triadic 120-180° (sat 70-90, light 45-55)
+  const accentOffset = lerp(120, 180, playfulSerious);
+  const accentHue = ((primaryHue + accentOffset) % 360 + 360) % 360;
+  let accentSat = clamp(primarySat + 15, 70, 90);
+  let accentLight = clamp(lerp(55, 45, loudQuiet), 45, 55);
 
-  // 7. Background: very light neutral tinted by base
-  const bgHue = baseHue;
-  const bgSat = lerp(12, 5, casualFormal); // casual=slightly tinted, formal=near white
-  const bgLight = lerp(97, 95, massElite);
+  // 8. Background: same hue family, near-white (sat 5-15, light 95-98)
+  const bgHue = primaryHue;
+  const bgSat = clamp(lerp(15, 5, casualFormal), 5, 15);
+  const bgLight = clamp(lerp(98, 95, massElite), 95, 98);
 
-  // 8. Text: very dark version
-  const textHue = (baseHue + 180) % 360; // complementary undertone
-  const textSat = lerp(25, 15, loudQuiet);
-  const textLight = lerp(12, 8, massElite); // elite=darker
+  // 9. Text: complementary hue, near-black (sat 10-25, light 8-18)
+  const textHue = (primaryHue + 180) % 360;
+  const textSat = clamp(lerp(25, 10, loudQuiet), 10, 25);
+  const textLight = clamp(lerp(18, 8, massElite), 8, 18);
+
+  // Apply banned zones to all colors
+  const [pH, pS, pL] = enforceBans(primaryHue, primarySat, primaryLight);
+  const [sH, sS, sL] = enforceBans(secHue, secSat, secLight);
+  const [aH, aS, aL] = enforceBans(accentHue, accentSat, accentLight);
+  // bg and text are low-sat so bans rarely trigger, but apply anyway
+  const [bH, bS, bL] = enforceBans(bgHue, bgSat, bgLight);
+  const [tH, tS, tL] = enforceBans(textHue, textSat, textLight);
 
   return [
-    { name: nameColor(baseHue, primarySat, primaryLight), hex: hslToHex(baseHue, primarySat, primaryLight), role: "Primary" },
-    { name: nameColor(secHue, secSat, secLight), hex: hslToHex(secHue, secSat, secLight), role: "Secondary" },
-    { name: nameColor(accentHue, accentSat, accentLight), hex: hslToHex(accentHue, accentSat, accentLight), role: "Accent" },
-    { name: nameColor(bgHue, bgSat, bgLight), hex: hslToHex(bgHue, bgSat, bgLight), role: "Background" },
-    { name: nameColor(textHue, textSat, textLight), hex: hslToHex(textHue, textSat, textLight), role: "Text" },
+    { name: nameColor(pH, pS, pL), hex: hslToHex(pH, pS, pL), role: "Primary" },
+    { name: nameColor(sH, sS, sL), hex: hslToHex(sH, sS, sL), role: "Secondary" },
+    { name: nameColor(aH, aS, aL), hex: hslToHex(aH, aS, aL), role: "Accent" },
+    { name: nameColor(bH, bS, bL), hex: hslToHex(bH, bS, bL), role: "Background" },
+    { name: nameColor(tH, tS, tL), hex: hslToHex(tH, tS, tL), role: "Text" },
   ];
 }
 
