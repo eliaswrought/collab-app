@@ -474,6 +474,45 @@ function ChipSelector({ options, selected, onToggle, max }: {
 }
 
 /* ───────── Transition wrapper ───────── */
+function AccordionSection({ emoji, title, defaultOpen = false, children }: { emoji: string; title: string; defaultOpen?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border border-neutral-800 rounded-xl overflow-hidden bg-neutral-900/50">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-neutral-800/50 transition-colors"
+      >
+        <span className="text-sm font-medium text-neutral-200">
+          {emoji} {title}
+        </span>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`text-neutral-500 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      <div
+        className="grid transition-all duration-200 ease-in-out"
+        style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
+      >
+        <div className="overflow-hidden">
+          <div className="px-4 pb-4 pt-1">
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function StepTransition({ children }: { children: React.ReactNode }) {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
@@ -870,12 +909,175 @@ export default function Home() {
         {/* Results */}
         {step === totalSteps && result && (
           <StepTransition>
-            <div className="space-y-6 w-full">
-              {/* AI Generated Logo Variants */}
-              {logoVariants.length > 0 && (
-                <Card className="bg-neutral-900/50 border-neutral-800 text-center">
-                  <CardContent className="p-4 sm:p-6">
-                    <p className="text-xs text-neutral-500 uppercase tracking-wider mb-3">Choose Your Logo</p>
+            <div className="w-full">
+              {/* ── Style Tile Hero ── */}
+              <div
+                className="min-h-[100dvh] flex flex-col items-center justify-center text-center px-4 py-12 -mx-4 sm:-mx-6 rounded-2xl relative overflow-hidden"
+                style={{ background: `linear-gradient(to bottom, ${result.colors[0]?.hex}12 0%, transparent 60%)` }}
+              >
+                {/* Decorative color bar at top */}
+                <div className="absolute top-0 left-0 right-0 h-1 flex">
+                  {result.colors.map((c) => (
+                    <div key={c.hex} className="flex-1" style={{ backgroundColor: c.hex }} />
+                  ))}
+                </div>
+
+                {/* Logo */}
+                {logoVariants.length > 0 && (
+                  <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl overflow-hidden bg-neutral-800/50 mb-6 shadow-2xl ring-1 ring-white/5">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={logoVariants[selectedVariant ?? 0]}
+                      alt={`${result.name} logo`}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                )}
+
+                {/* Brand Name */}
+                <h2
+                  className="text-3xl sm:text-4xl font-bold tracking-wide mb-2"
+                  style={{ fontFamily: result.fonts.heading }}
+                >
+                  {result.name}
+                </h2>
+
+                {/* Tagline */}
+                <p
+                  className="text-neutral-400 text-base sm:text-lg italic max-w-xs mb-8"
+                  style={{ fontFamily: result.fonts.body }}
+                >
+                  {result.tagline}
+                </p>
+
+                {/* Color Swatches */}
+                <div className="flex gap-2 mb-6">
+                  {result.colors.map((c) => (
+                    <div
+                      key={c.hex}
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full ring-2 ring-neutral-800 shadow-lg cursor-pointer hover:scale-110 transition-transform"
+                      style={{ backgroundColor: c.hex }}
+                      title={`${c.name} — ${c.hex}`}
+                      onClick={() => navigator.clipboard.writeText(c.hex)}
+                    />
+                  ))}
+                </div>
+
+                {/* Typography Sample */}
+                <div className="flex gap-4 text-sm text-neutral-500 mb-6">
+                  <span style={{ fontFamily: result.fonts.heading }} className="font-bold text-neutral-300">{result.fonts.heading}</span>
+                  <span className="text-neutral-700">+</span>
+                  <span style={{ fontFamily: result.fonts.body }} className="text-neutral-300">{result.fonts.body}</span>
+                </div>
+
+                {/* Personality Badges */}
+                <div className="flex gap-2 flex-wrap justify-center max-w-xs">
+                  {result.personality.slice(0, 4).map((trait) => (
+                    <Badge key={trait} variant="outline" className="px-3 py-1 bg-neutral-900/60 border-neutral-700/50 text-neutral-300 text-xs backdrop-blur-sm">
+                      {trait}
+                    </Badge>
+                  ))}
+                </div>
+
+                {/* Scroll hint */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-neutral-600 text-xs flex flex-col items-center gap-1 animate-pulse">
+                  <span>Scroll to explore</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+              </div>
+
+              {/* ── Accordion Sections ── */}
+              <div className="space-y-2 mt-8">
+                {/* Accordion: Colors */}
+                <AccordionSection emoji="🎨" title="Colors" defaultOpen={false}>
+                  <div className="flex gap-1.5 sm:gap-2 rounded-xl overflow-hidden">
+                    {result.colors.map((c) => (
+                      <div key={c.hex} className="flex-1 group cursor-pointer" onClick={() => navigator.clipboard.writeText(c.hex)}>
+                        <div className="h-16 sm:h-20 transition-transform group-hover:scale-105" style={{ backgroundColor: c.hex }} />
+                        <div className="bg-neutral-900 px-1 sm:px-2 py-1.5 sm:py-2 text-center">
+                          {c.role && <p className="text-[9px] sm:text-[10px] text-purple-400 font-medium uppercase tracking-wider mb-0.5">{c.role}</p>}
+                          <p className="text-[10px] sm:text-xs text-neutral-300 truncate">{c.name}</p>
+                          <p className="text-[10px] sm:text-xs text-neutral-500 font-mono">{c.hex}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-neutral-600 mt-2">Tap a color to copy hex</p>
+                </AccordionSection>
+
+                {/* Accordion: Typography */}
+                <AccordionSection emoji="🔤" title="Typography" defaultOpen={false}>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Card className="bg-neutral-900 border-neutral-800">
+                      <CardContent className="p-4">
+                        <p className="text-xs text-neutral-500 mb-1">Heading</p>
+                        <p className="text-xl sm:text-2xl font-bold" style={{ fontFamily: result.fonts.heading }}>{result.fonts.heading}</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-neutral-900 border-neutral-800">
+                      <CardContent className="p-4">
+                        <p className="text-xs text-neutral-500 mb-1">Body</p>
+                        <p className="text-base sm:text-lg" style={{ fontFamily: result.fonts.body }}>{result.fonts.body}</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </AccordionSection>
+
+                {/* Accordion: Personality */}
+                <AccordionSection emoji="🎭" title="Personality" defaultOpen={false}>
+                  <div className="flex gap-2 flex-wrap">
+                    {result.personality.map((trait) => (
+                      <Badge key={trait} variant="outline" className="px-3 py-1.5 bg-neutral-900 border-neutral-800 text-neutral-300 text-sm">
+                        {trait}
+                      </Badge>
+                    ))}
+                  </div>
+                </AccordionSection>
+
+                {/* Accordion: Brand Spectrum */}
+                <AccordionSection emoji="📊" title="Brand Spectrum" defaultOpen={false}>
+                  <div className="space-y-4">
+                    {inputs.sliders.map((s, i) => (
+                      <div key={i} className="mb-4">
+                        <div className="flex justify-between text-xs sm:text-sm text-neutral-400 mb-2">
+                          <span>{s.label[0]}</span>
+                          <span>{s.label[1]}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={s.value}
+                          onChange={(e) => updateSlider(i, Number(e.target.value))}
+                          style={{ WebkitAppearance: 'none', appearance: 'none', width: '100%', height: '12px', borderRadius: '9999px', background: '#262626', cursor: 'pointer', outline: 'none', margin: '8px 0' }}
+                          className="ios-range-fix"
+                        />
+                      </div>
+                    ))}
+                    <Button
+                      onClick={() => {
+                        setGenerating(true);
+                        setTimeout(() => {
+                          const brand = generateBrand(inputs);
+                          loadGoogleFonts([brand.fonts.heading, brand.fonts.body]);
+                          setResult(brand);
+                          saveBrand(brand);
+                          generateVariants(brand);
+                          setGenerating(false);
+                        }, 400);
+                      }}
+                      disabled={generating}
+                      className="w-full mt-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-2.5 h-auto rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-purple-500/20 border-0"
+                    >
+                      {generating ? "Regenerating..." : "✨ Apply Changes"}
+                    </Button>
+                  </div>
+                </AccordionSection>
+
+                {/* Accordion: Logo Variants */}
+                {logoVariants.length > 0 && (
+                  <AccordionSection emoji="🖼️" title="Logo Variants" defaultOpen={false}>
                     <div className="grid grid-cols-2 gap-3">
                       {logoVariants.map((url, i) => {
                         if (variantLoadState[i] === "error") return null;
@@ -914,142 +1116,39 @@ export default function Home() {
                       <Button
                         onClick={handleMoreLikeThis}
                         variant="ghost"
-                        className="mt-3 text-sm text-neutral-400 hover:text-white"
+                        className="mt-3 text-sm text-neutral-400 hover:text-white w-full"
                       >
                         🎲 More Like This
                       </Button>
                     )}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Brand Name & Tagline */}
-              <div className="text-center mt-2">
-                <h2 className="text-2xl sm:text-3xl font-bold tracking-widest" style={{ fontFamily: result.fonts.heading }}>
-                  {result.name}
-                </h2>
-                <p className="text-neutral-400 mt-1 italic" style={{ fontFamily: result.fonts.body }}>
-                  {result.tagline}
-                </p>
+                  </AccordionSection>
+                )}
               </div>
 
-              {/* Colors */}
-              <div>
-                <h3 className="text-sm text-neutral-400 mb-3 uppercase tracking-wider">Color Palette</h3>
-                <div className="flex gap-1.5 sm:gap-2 rounded-xl overflow-hidden">
-                  {result.colors.map((c) => (
-                    <div key={c.hex} className="flex-1 group cursor-pointer" onClick={() => navigator.clipboard.writeText(c.hex)}>
-                      <div className="h-16 sm:h-20 transition-transform group-hover:scale-105" style={{ backgroundColor: c.hex }} />
-                      <div className="bg-neutral-900 px-1 sm:px-2 py-1.5 sm:py-2 text-center">
-                        {c.role && <p className="text-[9px] sm:text-[10px] text-purple-400 font-medium uppercase tracking-wider mb-0.5">{c.role}</p>}
-                        <p className="text-[10px] sm:text-xs text-neutral-300 truncate">{c.name}</p>
-                        <p className="text-[10px] sm:text-xs text-neutral-500 font-mono">{c.hex}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-neutral-600 mt-1">Tap a color to copy hex</p>
-              </div>
-
-              {/* Typography */}
-              <div>
-                <h3 className="text-sm text-neutral-400 mb-3 uppercase tracking-wider">Typography</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <Card className="bg-neutral-900 border-neutral-800">
-                    <CardContent className="p-4">
-                      <p className="text-xs text-neutral-500 mb-1">Heading</p>
-                      <p className="text-xl sm:text-2xl font-bold" style={{ fontFamily: result.fonts.heading }}>{result.fonts.heading}</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-neutral-900 border-neutral-800">
-                    <CardContent className="p-4">
-                      <p className="text-xs text-neutral-500 mb-1">Body</p>
-                      <p className="text-base sm:text-lg" style={{ fontFamily: result.fonts.body }}>{result.fonts.body}</p>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-
-              {/* Personality */}
-              <div>
-                <h3 className="text-sm text-neutral-400 mb-3 uppercase tracking-wider">Brand Personality</h3>
-                <div className="flex gap-2 flex-wrap">
-                  {result.personality.map((trait) => (
-                    <Badge key={trait} variant="outline" className="px-3 py-1.5 bg-neutral-900 border-neutral-800 text-neutral-300 text-sm">
-                      {trait}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              {/* Personality Spectrum — editable */}
-              <div>
-                <h3 className="text-sm text-neutral-400 mb-3 uppercase tracking-wider">Brand Spectrum</h3>
-                <Card className="bg-neutral-900 border-neutral-800">
-                  <CardContent className="p-4 space-y-4">
-                    {inputs.sliders.map((s, i) => (
-                      <div key={i} className="mb-4">
-                        <div className="flex justify-between text-xs sm:text-sm text-neutral-400 mb-2">
-                          <span>{s.label[0]}</span>
-                          <span>{s.label[1]}</span>
-                        </div>
-                        <input
-                          type="range"
-                          min={0}
-                          max={100}
-                          step={1}
-                          value={s.value}
-                          onChange={(e) => updateSlider(i, Number(e.target.value))}
-                          style={{ WebkitAppearance: 'none', appearance: 'none', width: '100%', height: '12px', borderRadius: '9999px', background: '#262626', cursor: 'pointer', outline: 'none', margin: '8px 0' }}
-                          className="ios-range-fix"
-                        />
-                      </div>
-                    ))}
-                    <Button
-                      onClick={() => {
-                        setGenerating(true);
-                        setTimeout(() => {
-                          const brand = generateBrand(inputs);
-                          loadGoogleFonts([brand.fonts.heading, brand.fonts.body]);
-                          setResult(brand);
-                          saveBrand(brand);
-                          generateVariants(brand);
-                          setGenerating(false);
-                        }, 400);
-                      }}
-                      disabled={generating}
-                      className="w-full mt-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-2.5 h-auto rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-purple-500/20 border-0"
-                    >
-                      {generating ? "Regenerating..." : "✨ Apply Changes"}
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Preview Website */}
-              <Button
-                onClick={() => setShowPreview(true)}
-                className="w-full bg-gradient-to-r from-indigo-500 to-cyan-500 text-white font-semibold py-3 h-auto rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-indigo-500/20 border-0"
-              >
-                🌐 Preview as Website
-              </Button>
-
-              {/* Actions */}
-              <div className="flex gap-3 pt-2 pb-8">
+              {/* ── Action Buttons ── */}
+              <div className="mt-8 space-y-3 pb-8">
                 <Button
-                  onClick={handleRegenerate}
-                  disabled={generating}
-                  variant="secondary"
-                  className="flex-1 bg-neutral-800 text-white font-semibold py-3 h-auto rounded-xl hover:bg-neutral-700 transition-colors disabled:opacity-50"
+                  onClick={() => setShowPreview(true)}
+                  className="w-full bg-gradient-to-r from-indigo-500 to-cyan-500 text-white font-semibold py-3 h-auto rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-indigo-500/20 border-0"
                 >
-                  {generating ? "..." : "🔄 Regenerate"}
+                  🌐 Preview as Website
                 </Button>
-                <Button
-                  onClick={reset}
-                  className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 h-auto rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-purple-500/20 border-0"
-                >
-                  🍄‍🟫 New Brand
-                </Button>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={handleRegenerate}
+                    disabled={generating}
+                    variant="secondary"
+                    className="flex-1 bg-neutral-800 text-white font-semibold py-3 h-auto rounded-xl hover:bg-neutral-700 transition-colors disabled:opacity-50"
+                  >
+                    {generating ? "..." : "🔄 Regenerate"}
+                  </Button>
+                  <Button
+                    onClick={reset}
+                    className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 h-auto rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-purple-500/20 border-0"
+                  >
+                    🍄‍🟫 New Brand
+                  </Button>
+                </div>
               </div>
             </div>
           </StepTransition>
