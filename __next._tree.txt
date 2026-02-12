@@ -1,2 +1,2 @@
-:HL["/collab-app/_next/static/chunks/650034570b1866ff.css","style"]
-0:{"buildId":"Qh58aW0h0se1cl17zmLj9","tree":{"name":"","paramType":null,"paramKey":"","hasRuntimePrefetch":false,"slots":{"children":{"name":"__PAGE__","paramType":null,"paramKey":"__PAGE__","hasRuntimePrefetch":false,"slots":null,"isRootLayout":false}},"isRootLayout":true},"staleTime":300}
+:HL["/collab-app/_next/static/chunks/e253e7449ae90ac7.css","style"]
+0:{"buildId":"HFXqQ4v8YKBGQbqPt9ip0","tree":{"name":"","paramType":null,"paramKey":"","hasRuntimePrefetch":false,"slots":{"children":{"name":"__PAGE__","paramType":null,"paramKey":"__PAGE__","hasRuntimePrefetch":false,"slots":null,"isRootLayout":false}},"isRootLayout":true},"staleTime":300}
