@@ -76,126 +76,159 @@ const DEFAULT_SLIDERS: SliderValue[] = [
 
 /* ───────── Brand Generation Logic ───────── */
 
-// Each palette is a designed system: [Primary, Secondary, Accent, Background, Text]
-interface BrandPalette {
-  name: string;
-  colors: { name: string; hex: string; role: string }[];
+/* ── HSL ↔ Hex helpers ── */
+function hslToHex(h: number, s: number, l: number): string {
+  h = ((h % 360) + 360) % 360;
+  s = Math.max(0, Math.min(100, s)) / 100;
+  l = Math.max(0, Math.min(100, l)) / 100;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  let r = 0, g = 0, b = 0;
+  if (h < 60) { r = c; g = x; }
+  else if (h < 120) { r = x; g = c; }
+  else if (h < 180) { g = c; b = x; }
+  else if (h < 240) { g = x; b = c; }
+  else if (h < 300) { r = x; b = c; }
+  else { r = c; b = x; }
+  const toHex = (v: number) => Math.round((v + m) * 255).toString(16).padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
 }
 
-const COLOR_PALETTES: Record<string, BrandPalette[]> = {
-  warmBold: [
-    { name: "Sunset Studio", colors: [
-      { name: "Flame", hex: "#E25822", role: "Primary" },
-      { name: "Amber", hex: "#F7B32B", role: "Secondary" },
-      { name: "Coral", hex: "#FF6F61", role: "Accent" },
-      { name: "Cream", hex: "#FFF8F0", role: "Background" },
-      { name: "Espresso", hex: "#2D1B0E", role: "Text" },
-    ]},
-    { name: "Crimson Edge", colors: [
-      { name: "Crimson", hex: "#DC143C", role: "Primary" },
-      { name: "Sunset", hex: "#FF6B35", role: "Secondary" },
-      { name: "Gold", hex: "#FFD700", role: "Accent" },
-      { name: "Ivory", hex: "#FFFFF0", role: "Background" },
-      { name: "Charcoal", hex: "#1A1A2E", role: "Text" },
-    ]},
-  ],
-  coolCalm: [
-    { name: "Ocean Breeze", colors: [
-      { name: "Ocean", hex: "#006994", role: "Primary" },
-      { name: "Steel", hex: "#4682B4", role: "Secondary" },
-      { name: "Sage", hex: "#9CAF88", role: "Accent" },
-      { name: "Frost", hex: "#F0F5F9", role: "Background" },
-      { name: "Slate", hex: "#2C3E50", role: "Text" },
-    ]},
-    { name: "Nordic Mist", colors: [
-      { name: "Fjord", hex: "#3D5A80", role: "Primary" },
-      { name: "Ice Blue", hex: "#98C1D9", role: "Secondary" },
-      { name: "Mint", hex: "#76C893", role: "Accent" },
-      { name: "Snow", hex: "#F7F9FC", role: "Background" },
-      { name: "Deep Navy", hex: "#1B2838", role: "Text" },
-    ]},
-  ],
-  premiumDark: [
-    { name: "Black Tie", colors: [
-      { name: "Gold", hex: "#D4AF37", role: "Primary" },
-      { name: "Burgundy", hex: "#800020", role: "Secondary" },
-      { name: "Champagne", hex: "#F7E7CE", role: "Accent" },
-      { name: "Ivory", hex: "#FAFAF5", role: "Background" },
-      { name: "Onyx", hex: "#1A1A1A", role: "Text" },
-    ]},
-    { name: "Midnight Luxe", colors: [
-      { name: "Royal Purple", hex: "#6A0DAD", role: "Primary" },
-      { name: "Midnight", hex: "#191970", role: "Secondary" },
-      { name: "Rose Gold", hex: "#B76E79", role: "Accent" },
-      { name: "Pearl", hex: "#F5F0EB", role: "Background" },
-      { name: "Deep Plum", hex: "#1A0A2E", role: "Text" },
-    ]},
-  ],
-  playfulBright: [
-    { name: "Candy Pop", colors: [
-      { name: "Electric Purple", hex: "#BF00FF", role: "Primary" },
-      { name: "Hot Pink", hex: "#FF69B4", role: "Secondary" },
-      { name: "Sunshine", hex: "#FFD700", role: "Accent" },
-      { name: "Cotton", hex: "#FFF5FB", role: "Background" },
-      { name: "Deep Violet", hex: "#2D0A4E", role: "Text" },
-    ]},
-    { name: "Tropical Punch", colors: [
-      { name: "Turquoise", hex: "#40E0D0", role: "Primary" },
-      { name: "Lime", hex: "#84CC16", role: "Secondary" },
-      { name: "Tangerine", hex: "#FF9F43", role: "Accent" },
-      { name: "Cloud", hex: "#F0FFFE", role: "Background" },
-      { name: "Jungle", hex: "#0D2818", role: "Text" },
-    ]},
-  ],
-  earthyNatural: [
-    { name: "Terra Firma", colors: [
-      { name: "Terracotta", hex: "#CC5533", role: "Primary" },
-      { name: "Olive", hex: "#808000", role: "Secondary" },
-      { name: "Sand", hex: "#D2B48C", role: "Accent" },
-      { name: "Linen", hex: "#FAF0E6", role: "Background" },
-      { name: "Walnut", hex: "#3E2723", role: "Text" },
-    ]},
-    { name: "Forest Floor", colors: [
-      { name: "Moss", hex: "#4A5D23", role: "Primary" },
-      { name: "Clay", hex: "#B85C38", role: "Secondary" },
-      { name: "Wheat", hex: "#DEB887", role: "Accent" },
-      { name: "Parchment", hex: "#F5F0E1", role: "Background" },
-      { name: "Bark", hex: "#2C1810", role: "Text" },
-    ]},
-  ],
-  techModern: [
-    { name: "Neon Circuit", colors: [
-      { name: "Cyber Blue", hex: "#00D4FF", role: "Primary" },
-      { name: "Electric", hex: "#7DF9FF", role: "Secondary" },
-      { name: "Neon Green", hex: "#39FF14", role: "Accent" },
-      { name: "Ice", hex: "#F0FAFB", role: "Background" },
-      { name: "Dark Matter", hex: "#0A0E17", role: "Text" },
-    ]},
-    { name: "Silicon", colors: [
-      { name: "Indigo", hex: "#4F46E5", role: "Primary" },
-      { name: "Graphite", hex: "#6B7280", role: "Secondary" },
-      { name: "Emerald", hex: "#10B981", role: "Accent" },
-      { name: "Ghost White", hex: "#F9FAFB", role: "Background" },
-      { name: "Ink", hex: "#111827", role: "Text" },
-    ]},
-  ],
-  neutralClean: [
-    { name: "Minimal", colors: [
-      { name: "Accent Blue", hex: "#0EA5E9", role: "Primary" },
-      { name: "Cool Gray", hex: "#6B7280", role: "Secondary" },
-      { name: "Warm Orange", hex: "#F59E0B", role: "Accent" },
-      { name: "White", hex: "#FFFFFF", role: "Background" },
-      { name: "Black", hex: "#111111", role: "Text" },
-    ]},
-    { name: "Monochrome Plus", colors: [
-      { name: "Charcoal", hex: "#36454F", role: "Primary" },
-      { name: "Silver", hex: "#9CA3AF", role: "Secondary" },
-      { name: "Coral Pop", hex: "#FF6B6B", role: "Accent" },
-      { name: "Snow", hex: "#FAFAFA", role: "Background" },
-      { name: "Jet", hex: "#0F0F0F", role: "Text" },
-    ]},
-  ],
+function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
+
+/* ── Color naming ── */
+function nameColor(h: number, s: number, l: number): string {
+  // Very light / very dark overrides
+  if (l > 90) {
+    const tints: Record<string, string> = {
+      red: "Rose White", orange: "Peach Cream", yellow: "Ivory", green: "Mint Cream",
+      cyan: "Ice", blue: "Frost", purple: "Lavender Mist", pink: "Cotton", neutral: "Snow",
+    };
+    return tints[hueFamily(h)] || "Cloud";
+  }
+  if (l < 18) {
+    const darks: Record<string, string> = {
+      red: "Burgundy Night", orange: "Espresso", yellow: "Dark Amber", green: "Forest Night",
+      cyan: "Deep Sea", blue: "Midnight", purple: "Deep Plum", pink: "Wine Dark", neutral: "Onyx",
+    };
+    return darks[hueFamily(h)] || "Ink";
+  }
+
+  const family = hueFamily(h);
+  const isHigh = s > 60;
+  const isMed = s > 30;
+  const isBright = l > 55;
+
+  const names: Record<string, [string, string, string, string]> = {
+    // [highSat+bright, highSat+dark, lowSat+bright, lowSat+dark]
+    red:     ["Scarlet", "Crimson", "Dusty Rose", "Maroon"],
+    orange:  ["Tangerine", "Burnt Orange", "Peach", "Sienna"],
+    yellow:  ["Sunshine", "Amber", "Buttercream", "Dark Gold"],
+    green:   ["Emerald", "Forest", "Sage", "Moss"],
+    cyan:    ["Turquoise", "Teal", "Seafoam", "Slate Teal"],
+    blue:    ["Royal Blue", "Navy", "Powder Blue", "Steel"],
+    purple:  ["Violet", "Deep Purple", "Lavender", "Plum"],
+    pink:    ["Hot Pink", "Magenta", "Blush", "Mauve"],
+    neutral: ["Silver", "Charcoal", "Ash", "Graphite"],
+  };
+
+  const set = names[family] || names.neutral;
+  if (isHigh && isBright) return set[0];
+  if (isHigh) return set[1];
+  if (isMed && isBright) return set[2];
+  return set[3];
+}
+
+function hueFamily(h: number): string {
+  h = ((h % 360) + 360) % 360;
+  if (h < 15 || h >= 345) return "red";
+  if (h < 40) return "orange";
+  if (h < 70) return "yellow";
+  if (h < 160) return "green";
+  if (h < 195) return "cyan";
+  if (h < 260) return "blue";
+  if (h < 310) return "purple";
+  return "pink";
+}
+
+/* ── Algorithmic palette generation ── */
+const INDUSTRY_HUES: Record<string, number> = {
+  "Technology": 210, "Food & Beverage": 25, "Health & Wellness": 145, "Fashion": 330,
+  "Finance": 215, "Education": 195, "Real Estate": 35, "Travel": 180,
+  "Entertainment": 280, "Creative Agency": 315, "SaaS": 230, "E-Commerce": 20,
+  "Local Business": 40, "Non-Profit": 160, "Other": 200,
 };
+
+const VALUE_HUE_SHIFTS: Record<string, number> = {
+  "Sustainability": -30, "Trust": 10, "Innovation": 40, "Joy": -60, "Creativity": 50,
+  "Community": -20, "Speed": -10, "Simplicity": 0, "Quality": 5, "Transparency": 15,
+  "Empowerment": 20, "Authenticity": -15, "Excellence": 10, "Freedom": -40,
+  "Security": 15, "Wisdom": 30, "Courage": -45, "Compassion": -25, "Disruption": 45,
+  "Heritage": -5,
+};
+
+function generatePalette(inputs: BrandInputs): { name: string; hex: string; role: string }[] {
+  const s = inputs.sliders;
+  const friendAuth = s[0].value / 100;    // 0=friend, 1=authority
+  const youngMature = s[1].value / 100;   // 0=young, 1=mature
+  const playfulSerious = s[2].value / 100; // 0=playful, 1=serious
+  const massElite = s[3].value / 100;     // 0=mass, 1=elite
+  const casualFormal = s[4].value / 100;  // 0=casual, 1=formal
+  const loudQuiet = s[5].value / 100;     // 0=loud, 1=quiet
+
+  // 1. Base hue from industry
+  let baseHue = INDUSTRY_HUES[inputs.industry] ?? 200;
+
+  // 2. Shift hue by values (averaged, capped)
+  if (inputs.values.length > 0) {
+    const shift = inputs.values.reduce((sum, v) => sum + (VALUE_HUE_SHIFTS[v] ?? 0), 0) / inputs.values.length;
+    baseHue += shift * 0.4; // subtle influence
+  }
+
+  // 3. Sliders shift hue slightly: formal→cooler, casual→warmer
+  baseHue += (casualFormal - 0.5) * -15; // formal pushes cool
+  baseHue += (friendAuth - 0.5) * 10;    // authority pushes slightly cooler
+
+  baseHue = ((baseHue % 360) + 360) % 360;
+
+  // 4. Derive saturation & lightness parameters from sliders
+  const baseSat = lerp(75, 45, youngMature) // young=vivid, mature=muted
+    + lerp(15, -15, playfulSerious)          // playful=more sat
+    + lerp(10, -10, loudQuiet);              // loud=more sat
+  const primarySat = Math.max(30, Math.min(95, baseSat + lerp(-5, 10, friendAuth)));
+  const primaryLight = lerp(52, 42, massElite); // elite = darker, richer primary
+
+  // 5. Secondary: analogous hue
+  const secDirection = casualFormal > 0.5 ? -30 : 30; // formal→cooler analog, casual→warmer
+  const secHue = baseHue + secDirection;
+  const secSat = Math.max(20, primarySat - 15);
+  const secLight = lerp(55, 45, massElite);
+
+  // 6. Accent: complementary/triadic
+  const accentOffset = lerp(120, 180, playfulSerious); // playful→triadic, serious→complement
+  const accentHue = baseHue + accentOffset;
+  const accentSat = Math.min(95, primarySat + 10);
+  const accentLight = lerp(55, 48, loudQuiet);
+
+  // 7. Background: very light neutral tinted by base
+  const bgHue = baseHue;
+  const bgSat = lerp(12, 5, casualFormal); // casual=slightly tinted, formal=near white
+  const bgLight = lerp(97, 95, massElite);
+
+  // 8. Text: very dark version
+  const textHue = (baseHue + 180) % 360; // complementary undertone
+  const textSat = lerp(25, 15, loudQuiet);
+  const textLight = lerp(12, 8, massElite); // elite=darker
+
+  return [
+    { name: nameColor(baseHue, primarySat, primaryLight), hex: hslToHex(baseHue, primarySat, primaryLight), role: "Primary" },
+    { name: nameColor(secHue, secSat, secLight), hex: hslToHex(secHue, secSat, secLight), role: "Secondary" },
+    { name: nameColor(accentHue, accentSat, accentLight), hex: hslToHex(accentHue, accentSat, accentLight), role: "Accent" },
+    { name: nameColor(bgHue, bgSat, bgLight), hex: hslToHex(bgHue, bgSat, bgLight), role: "Background" },
+    { name: nameColor(textHue, textSat, textLight), hex: hslToHex(textHue, textSat, textLight), role: "Text" },
+  ];
+}
 
 const FONT_PAIRS = [
   { heading: "Inter", body: "Inter", vibe: "clean" },
@@ -243,27 +276,8 @@ function generateBrand(inputs: BrandInputs): BrandResult {
   const casualFormal = s[4].value;
   const loudQuiet = s[5].value;
 
-  // Select a designed palette based on slider positions
-  let paletteKey: string;
-  if (massElite > 65 && casualFormal > 60) {
-    paletteKey = "premiumDark";
-  } else if (playfulSerious < 35 && youngMature < 40) {
-    paletteKey = "playfulBright";
-  } else if (loudQuiet < 35 && playfulSerious < 50) {
-    paletteKey = "warmBold";
-  } else if (loudQuiet > 65 && casualFormal > 50) {
-    paletteKey = "coolCalm";
-  } else if (youngMature > 65 && friendAuth > 60) {
-    paletteKey = "neutralClean";
-  } else if (friendAuth < 40 && youngMature < 45) {
-    paletteKey = "techModern";
-  } else {
-    const keys = Object.keys(COLOR_PALETTES);
-    paletteKey = pick(keys);
-  }
-
-  const palette = pick(COLOR_PALETTES[paletteKey]);
-  const colors = palette.colors.map(c => ({ name: c.name, hex: c.hex, role: c.role }));
+  // Algorithmic palette from all inputs
+  const colors = generatePalette(inputs);
 
   let fontVibe: string;
   if (massElite > 65) fontVibe = "premium";
