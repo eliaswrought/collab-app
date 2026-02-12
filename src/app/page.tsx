@@ -958,25 +958,37 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Personality Spectrum */}
+              {/* Personality Spectrum — editable */}
               <div>
                 <h3 className="text-sm text-neutral-400 mb-3 uppercase tracking-wider">Brand Spectrum</h3>
                 <Card className="bg-neutral-900 border-neutral-800">
-                  <CardContent className="p-4 space-y-3">
-                    {result.sliderSnapshot.map((s, i) => (
-                      <div key={i}>
-                        <div className="flex justify-between text-[10px] sm:text-xs text-neutral-500 mb-1">
-                          <span>{s.label[0]}</span>
-                          <span>{s.label[1]}</span>
-                        </div>
-                        <div className="w-full h-1.5 bg-neutral-800 rounded-full relative">
-                          <div
-                            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-purple-500 rounded-full"
-                            style={{ left: `calc(${s.value}% - 6px)` }}
-                          />
-                        </div>
-                      </div>
+                  <CardContent className="p-4 space-y-4">
+                    {inputs.sliders.map((s, i) => (
+                      <PersonalitySlider
+                        key={i}
+                        slider={s}
+                        onChange={(v) => {
+                          updateSlider(i, v);
+                        }}
+                      />
                     ))}
+                    <Button
+                      onClick={() => {
+                        setGenerating(true);
+                        setTimeout(() => {
+                          const brand = generateBrand(inputs);
+                          loadGoogleFonts([brand.fonts.heading, brand.fonts.body]);
+                          setResult(brand);
+                          saveBrand(brand);
+                          generateVariants(brand);
+                          setGenerating(false);
+                        }, 400);
+                      }}
+                      disabled={generating}
+                      className="w-full mt-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-2.5 h-auto rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-purple-500/20 border-0"
+                    >
+                      {generating ? "Regenerating..." : "✨ Apply Changes"}
+                    </Button>
                   </CardContent>
                 </Card>
               </div>
