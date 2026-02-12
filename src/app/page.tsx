@@ -367,7 +367,7 @@ export default function Home() {
             LogoTruffle
           </span>
           {" "}
-          <span className="text-2xl sm:text-4xl">🍫</span>
+          <span className="text-2xl sm:text-4xl">🍄‍🟫</span>
         </h1>
         <p className="text-neutral-400 text-sm sm:text-lg">Seek out your rare brand</p>
       </div>
@@ -525,7 +525,7 @@ export default function Home() {
                 disabled={generating}
                 className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 h-auto rounded-xl disabled:opacity-20 hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-purple-500/20 border-0"
               >
-                {generating ? "🍫 Hunting for truffles..." : "Generate Brand 🍫"}
+                {generating ? "🍄‍🟫 Hunting for truffles..." : "Generate Brand 🍄‍🟫"}
               </Button>
               <Button variant="ghost" onClick={() => setStep(4)} className="text-sm text-neutral-500 hover:text-neutral-300 px-2 -ml-2">← Back</Button>
             </div>
@@ -634,7 +634,7 @@ export default function Home() {
                   onClick={reset}
                   className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 h-auto rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-purple-500/20 border-0"
                 >
-                  🍫 New Brand
+                  🍄‍🟫 New Brand
                 </Button>
               </div>
             </div>

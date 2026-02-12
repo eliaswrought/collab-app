@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "BrandForge — Instant Brand Generator",
-  description: "Generate a complete brand identity in seconds",
+  title: "LogoTruffle 🍄‍🟫 — Seek Out Your Rare Brand",
+  description: "Generate a complete brand identity in seconds. Colors, typography, personality — all from a few inputs.",
 };
 
 export const viewport: Viewport = {
