@@ -386,20 +386,49 @@ export default function Home() {
     }));
   }, []);
 
-  const buildLogoUrl = (brand: BrandResult, seed?: number) => {
-    const s = seed ?? Math.floor(Math.random() * 1000000);
+  const buildPrompt = (brand: BrandResult) => {
     const colorDesc = brand.colors.slice(0, 3).map(c => c.name).join(", ");
     const style = inputs.logoStyle || "geometric";
-    const prompt = `${style} minimal logo for ${brand.name} in ${inputs.industry}, flat design, vector style, clean, professional, white background, ${brand.personality.join(", ")}, ${colorDesc}`;
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&nologo=true&seed=${s}`;
+    return `${style} minimal logo for "${brand.name}" — a ${inputs.industry} brand. Style: flat design, vector, clean, professional, white background. Personality: ${brand.personality.join(", ")}. Colors inspired by: ${colorDesc}. No text in the image.`;
   };
 
-  const generateVariants = (brand: BrandResult) => {
-    const seeds = Array.from({ length: 4 }, () => Math.floor(Math.random() * 1000000));
-    const urls = seeds.map(s => buildLogoUrl(brand, s));
-    setLogoVariants(urls);
+  const buildPollinationsUrl = (brand: BrandResult, seed?: number) => {
+    const s = seed ?? Math.floor(Math.random() * 1000000);
+    return `https://image.pollinations.ai/prompt/${encodeURIComponent(buildPrompt(brand))}?width=512&height=512&nologo=true&seed=${s}`;
+  };
+
+  const generateVariants = async (brand: BrandResult) => {
+    setLogoVariants([]);
     setSelectedVariant(null);
     setLogoUrl(null);
+    setVariantLoadState({ 0: "loading", 1: "loading", 2: "loading", 3: "loading" });
+
+    try {
+      // Try API route first (OpenAI DALL-E 3)
+      const res = await fetch("/api/generate-logo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: buildPrompt(brand), n: 4 }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.images?.length > 0) {
+          setLogoVariants(data.images);
+          const loadState: Record<number, "loading" | "loaded" | "error"> = {};
+          data.images.forEach((_: string, i: number) => { loadState[i] = "loading"; });
+          setVariantLoadState(loadState);
+          return;
+        }
+      }
+    } catch {
+      // API not available (static deploy), fall through to Pollinations
+    }
+
+    // Fallback: Pollinations
+    const seeds = Array.from({ length: 4 }, () => Math.floor(Math.random() * 1000000));
+    const urls = seeds.map(s => buildPollinationsUrl(brand, s));
+    setLogoVariants(urls);
     setVariantLoadState({ 0: "loading", 1: "loading", 2: "loading", 3: "loading" });
   };
 
