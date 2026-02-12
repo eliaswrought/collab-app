@@ -37,7 +37,7 @@ const LOGO_STYLES = [
 interface BrandResult {
   name: string;
   tagline: string;
-  colors: { name: string; hex: string }[];
+  colors: { name: string; hex: string; role?: string }[];
   fonts: { heading: string; body: string };
   personality: string[];
   logoText: string;
@@ -76,41 +76,124 @@ const DEFAULT_SLIDERS: SliderValue[] = [
 
 /* ───────── Brand Generation Logic ───────── */
 
-const COLOR_POOLS: Record<string, { name: string; hex: string }[]> = {
+// Each palette is a designed system: [Primary, Secondary, Accent, Background, Text]
+interface BrandPalette {
+  name: string;
+  colors: { name: string; hex: string; role: string }[];
+}
+
+const COLOR_PALETTES: Record<string, BrandPalette[]> = {
   warmBold: [
-    { name: "Flame", hex: "#E25822" }, { name: "Sunset", hex: "#FF6B35" },
-    { name: "Marigold", hex: "#F7B32B" }, { name: "Crimson", hex: "#DC143C" },
-    { name: "Coral", hex: "#FF6F61" }, { name: "Amber", hex: "#FFBF00" },
+    { name: "Sunset Studio", colors: [
+      { name: "Flame", hex: "#E25822", role: "Primary" },
+      { name: "Amber", hex: "#F7B32B", role: "Secondary" },
+      { name: "Coral", hex: "#FF6F61", role: "Accent" },
+      { name: "Cream", hex: "#FFF8F0", role: "Background" },
+      { name: "Espresso", hex: "#2D1B0E", role: "Text" },
+    ]},
+    { name: "Crimson Edge", colors: [
+      { name: "Crimson", hex: "#DC143C", role: "Primary" },
+      { name: "Sunset", hex: "#FF6B35", role: "Secondary" },
+      { name: "Gold", hex: "#FFD700", role: "Accent" },
+      { name: "Ivory", hex: "#FFFFF0", role: "Background" },
+      { name: "Charcoal", hex: "#1A1A2E", role: "Text" },
+    ]},
   ],
   coolCalm: [
-    { name: "Ocean", hex: "#006994" }, { name: "Sage", hex: "#9CAF88" },
-    { name: "Mist", hex: "#90AFC5" }, { name: "Slate", hex: "#708090" },
-    { name: "Frost", hex: "#E1E8ED" }, { name: "Steel", hex: "#4682B4" },
+    { name: "Ocean Breeze", colors: [
+      { name: "Ocean", hex: "#006994", role: "Primary" },
+      { name: "Steel", hex: "#4682B4", role: "Secondary" },
+      { name: "Sage", hex: "#9CAF88", role: "Accent" },
+      { name: "Frost", hex: "#F0F5F9", role: "Background" },
+      { name: "Slate", hex: "#2C3E50", role: "Text" },
+    ]},
+    { name: "Nordic Mist", colors: [
+      { name: "Fjord", hex: "#3D5A80", role: "Primary" },
+      { name: "Ice Blue", hex: "#98C1D9", role: "Secondary" },
+      { name: "Mint", hex: "#76C893", role: "Accent" },
+      { name: "Snow", hex: "#F7F9FC", role: "Background" },
+      { name: "Deep Navy", hex: "#1B2838", role: "Text" },
+    ]},
   ],
   premiumDark: [
-    { name: "Onyx", hex: "#353935" }, { name: "Midnight", hex: "#191970" },
-    { name: "Burgundy", hex: "#800020" }, { name: "Gold", hex: "#D4AF37" },
-    { name: "Champagne", hex: "#F7E7CE" }, { name: "Ivory", hex: "#FFFFF0" },
+    { name: "Black Tie", colors: [
+      { name: "Gold", hex: "#D4AF37", role: "Primary" },
+      { name: "Burgundy", hex: "#800020", role: "Secondary" },
+      { name: "Champagne", hex: "#F7E7CE", role: "Accent" },
+      { name: "Ivory", hex: "#FAFAF5", role: "Background" },
+      { name: "Onyx", hex: "#1A1A1A", role: "Text" },
+    ]},
+    { name: "Midnight Luxe", colors: [
+      { name: "Royal Purple", hex: "#6A0DAD", role: "Primary" },
+      { name: "Midnight", hex: "#191970", role: "Secondary" },
+      { name: "Rose Gold", hex: "#B76E79", role: "Accent" },
+      { name: "Pearl", hex: "#F5F0EB", role: "Background" },
+      { name: "Deep Plum", hex: "#1A0A2E", role: "Text" },
+    ]},
   ],
   playfulBright: [
-    { name: "Electric Purple", hex: "#BF00FF" }, { name: "Hot Pink", hex: "#FF69B4" },
-    { name: "Turquoise", hex: "#40E0D0" }, { name: "Lime", hex: "#84CC16" },
-    { name: "Sunshine", hex: "#FFD700" }, { name: "Sky", hex: "#87CEEB" },
+    { name: "Candy Pop", colors: [
+      { name: "Electric Purple", hex: "#BF00FF", role: "Primary" },
+      { name: "Hot Pink", hex: "#FF69B4", role: "Secondary" },
+      { name: "Sunshine", hex: "#FFD700", role: "Accent" },
+      { name: "Cotton", hex: "#FFF5FB", role: "Background" },
+      { name: "Deep Violet", hex: "#2D0A4E", role: "Text" },
+    ]},
+    { name: "Tropical Punch", colors: [
+      { name: "Turquoise", hex: "#40E0D0", role: "Primary" },
+      { name: "Lime", hex: "#84CC16", role: "Secondary" },
+      { name: "Tangerine", hex: "#FF9F43", role: "Accent" },
+      { name: "Cloud", hex: "#F0FFFE", role: "Background" },
+      { name: "Jungle", hex: "#0D2818", role: "Text" },
+    ]},
   ],
   earthyNatural: [
-    { name: "Terracotta", hex: "#CC5533" }, { name: "Olive", hex: "#808000" },
-    { name: "Walnut", hex: "#5C4033" }, { name: "Sand", hex: "#D2B48C" },
-    { name: "Linen", hex: "#FAF0E6" }, { name: "Moss", hex: "#4A5D23" },
+    { name: "Terra Firma", colors: [
+      { name: "Terracotta", hex: "#CC5533", role: "Primary" },
+      { name: "Olive", hex: "#808000", role: "Secondary" },
+      { name: "Sand", hex: "#D2B48C", role: "Accent" },
+      { name: "Linen", hex: "#FAF0E6", role: "Background" },
+      { name: "Walnut", hex: "#3E2723", role: "Text" },
+    ]},
+    { name: "Forest Floor", colors: [
+      { name: "Moss", hex: "#4A5D23", role: "Primary" },
+      { name: "Clay", hex: "#B85C38", role: "Secondary" },
+      { name: "Wheat", hex: "#DEB887", role: "Accent" },
+      { name: "Parchment", hex: "#F5F0E1", role: "Background" },
+      { name: "Bark", hex: "#2C1810", role: "Text" },
+    ]},
   ],
   techModern: [
-    { name: "Cyber Blue", hex: "#00D4FF" }, { name: "Neon Green", hex: "#39FF14" },
-    { name: "Dark Matter", hex: "#0A0E17" }, { name: "Graphite", hex: "#383838" },
-    { name: "Ice", hex: "#E0F7FA" }, { name: "Electric", hex: "#7DF9FF" },
+    { name: "Neon Circuit", colors: [
+      { name: "Cyber Blue", hex: "#00D4FF", role: "Primary" },
+      { name: "Electric", hex: "#7DF9FF", role: "Secondary" },
+      { name: "Neon Green", hex: "#39FF14", role: "Accent" },
+      { name: "Ice", hex: "#F0FAFB", role: "Background" },
+      { name: "Dark Matter", hex: "#0A0E17", role: "Text" },
+    ]},
+    { name: "Silicon", colors: [
+      { name: "Indigo", hex: "#4F46E5", role: "Primary" },
+      { name: "Graphite", hex: "#6B7280", role: "Secondary" },
+      { name: "Emerald", hex: "#10B981", role: "Accent" },
+      { name: "Ghost White", hex: "#F9FAFB", role: "Background" },
+      { name: "Ink", hex: "#111827", role: "Text" },
+    ]},
   ],
   neutralClean: [
-    { name: "White", hex: "#FFFFFF" }, { name: "Black", hex: "#111111" },
-    { name: "Light Gray", hex: "#D4D4D4" }, { name: "Charcoal", hex: "#36454F" },
-    { name: "Snow", hex: "#FFFAFA" }, { name: "Accent Blue", hex: "#0EA5E9" },
+    { name: "Minimal", colors: [
+      { name: "Accent Blue", hex: "#0EA5E9", role: "Primary" },
+      { name: "Cool Gray", hex: "#6B7280", role: "Secondary" },
+      { name: "Warm Orange", hex: "#F59E0B", role: "Accent" },
+      { name: "White", hex: "#FFFFFF", role: "Background" },
+      { name: "Black", hex: "#111111", role: "Text" },
+    ]},
+    { name: "Monochrome Plus", colors: [
+      { name: "Charcoal", hex: "#36454F", role: "Primary" },
+      { name: "Silver", hex: "#9CA3AF", role: "Secondary" },
+      { name: "Coral Pop", hex: "#FF6B6B", role: "Accent" },
+      { name: "Snow", hex: "#FAFAFA", role: "Background" },
+      { name: "Jet", hex: "#0F0F0F", role: "Text" },
+    ]},
   ],
 };
 
@@ -160,25 +243,27 @@ function generateBrand(inputs: BrandInputs): BrandResult {
   const casualFormal = s[4].value;
   const loudQuiet = s[5].value;
 
-  let colorPool: { name: string; hex: string }[];
+  // Select a designed palette based on slider positions
+  let paletteKey: string;
   if (massElite > 65 && casualFormal > 60) {
-    colorPool = COLOR_POOLS.premiumDark;
+    paletteKey = "premiumDark";
   } else if (playfulSerious < 35 && youngMature < 40) {
-    colorPool = COLOR_POOLS.playfulBright;
+    paletteKey = "playfulBright";
   } else if (loudQuiet < 35 && playfulSerious < 50) {
-    colorPool = COLOR_POOLS.warmBold;
+    paletteKey = "warmBold";
   } else if (loudQuiet > 65 && casualFormal > 50) {
-    colorPool = COLOR_POOLS.coolCalm;
+    paletteKey = "coolCalm";
   } else if (youngMature > 65 && friendAuth > 60) {
-    colorPool = COLOR_POOLS.neutralClean;
+    paletteKey = "neutralClean";
   } else if (friendAuth < 40 && youngMature < 45) {
-    colorPool = COLOR_POOLS.techModern;
+    paletteKey = "techModern";
   } else {
-    const pools = Object.values(COLOR_POOLS);
-    colorPool = pick(pools);
+    const keys = Object.keys(COLOR_PALETTES);
+    paletteKey = pick(keys);
   }
-  
-  const colors = pickN(colorPool, 5);
+
+  const palette = pick(COLOR_PALETTES[paletteKey]);
+  const colors = palette.colors.map(c => ({ name: c.name, hex: c.hex, role: c.role }));
 
   let fontVibe: string;
   if (massElite > 65) fontVibe = "premium";
@@ -768,6 +853,7 @@ export default function Home() {
                     <div key={c.hex} className="flex-1 group cursor-pointer" onClick={() => navigator.clipboard.writeText(c.hex)}>
                       <div className="h-16 sm:h-20 transition-transform group-hover:scale-105" style={{ backgroundColor: c.hex }} />
                       <div className="bg-neutral-900 px-1 sm:px-2 py-1.5 sm:py-2 text-center">
+                        {c.role && <p className="text-[9px] sm:text-[10px] text-purple-400 font-medium uppercase tracking-wider mb-0.5">{c.role}</p>}
                         <p className="text-[10px] sm:text-xs text-neutral-300 truncate">{c.name}</p>
                         <p className="text-[10px] sm:text-xs text-neutral-500 font-mono">{c.hex}</p>
                       </div>
