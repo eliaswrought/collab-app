@@ -335,6 +335,7 @@ export default function Home() {
         } else if (session.step) {
           setStep(session.step);
         }
+        if (session.logoUrl) setLogoUrl(session.logoUrl);
       }
     } catch {}
     setRestored(true);
@@ -344,9 +345,9 @@ export default function Home() {
   useEffect(() => {
     if (!restored) return;
     try {
-      localStorage.setItem("logotruffle_session", JSON.stringify({ inputs, result, step }));
+      localStorage.setItem("logotruffle_session", JSON.stringify({ inputs, result, step, logoUrl }));
     } catch {}
-  }, [inputs, result, step, restored]);
+  }, [inputs, result, step, logoUrl, restored]);
 
   const updateSlider = useCallback((index: number, value: number) => {
     setInputs(prev => {
@@ -418,6 +419,8 @@ export default function Home() {
   const reset = () => {
     setStep(0);
     setResult(null);
+    setLogoUrl(null);
+    setLogoError(false);
     setInputs({
       name: "",
       description: "",
