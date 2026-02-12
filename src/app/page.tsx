@@ -317,9 +317,12 @@ function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+function shuffle<T>(arr: T[]): T[] {
+  return [...arr].sort(() => Math.random() - 0.5);
+}
+
 function pickN<T>(arr: T[], n: number): T[] {
-  const shuffled = [...arr].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, n);
+  return shuffle(arr).slice(0, n);
 }
 
 function generateBrand(inputs: BrandInputs): BrandResult {
@@ -348,20 +351,29 @@ function generateBrand(inputs: BrandInputs): BrandResult {
   const fontPool = matchingFonts.length > 0 && Math.random() > 0.3 ? matchingFonts : FONT_PAIRS;
   const fonts = pick(fontPool);
 
+  // Trait synonym pools — pick randomly for variety on regenerate
+  const traitPools: { condition: boolean; options: string[] }[] = [
+    { condition: friendAuth < 40, options: ["Approachable", "Friendly", "Warm", "Welcoming", "Down-to-Earth"] },
+    { condition: friendAuth > 60, options: ["Authoritative", "Commanding", "Trusted", "Credible", "Expert"] },
+    { condition: youngMature < 40, options: ["Innovative", "Fresh", "Forward-Thinking", "Cutting-Edge", "Modern"] },
+    { condition: youngMature > 60, options: ["Established", "Timeless", "Heritage", "Classic", "Enduring"] },
+    { condition: playfulSerious < 40, options: ["Playful", "Fun", "Whimsical", "Spirited", "Lively"] },
+    { condition: playfulSerious > 60, options: ["Serious", "Professional", "Focused", "Deliberate", "Composed"] },
+    { condition: massElite > 60, options: ["Premium", "Luxury", "Exclusive", "Upscale", "Elevated"] },
+    { condition: massElite < 40, options: ["Accessible", "Everyday", "For Everyone", "Democratic", "Universal"] },
+    { condition: loudQuiet < 40, options: ["Bold", "Striking", "Loud", "Unapologetic", "Daring"] },
+    { condition: loudQuiet > 60, options: ["Refined", "Subtle", "Understated", "Graceful", "Quiet"] },
+  ];
+
   const traits: string[] = [];
-  if (friendAuth < 40) traits.push("Approachable");
-  if (friendAuth > 60) traits.push("Authoritative");
-  if (youngMature < 40) traits.push("Innovative");
-  if (youngMature > 60) traits.push("Established");
-  if (playfulSerious < 40) traits.push("Playful");
-  if (playfulSerious > 60) traits.push("Serious");
-  if (massElite > 60) traits.push("Premium");
-  if (massElite < 40) traits.push("Accessible");
-  if (loudQuiet < 40) traits.push("Bold");
-  if (loudQuiet > 60) traits.push("Refined");
+  for (const pool of traitPools) {
+    if (pool.condition) traits.push(pick(pool.options));
+  }
   
-  traits.push(...inputs.values.slice(0, 4 - Math.min(traits.length, 2)));
-  const personality = traits.slice(0, 5);
+  // Shuffle user values before adding to avoid same order every time
+  const shuffledValues = shuffle(inputs.values);
+  traits.push(...shuffledValues.slice(0, 4 - Math.min(traits.length, 2)));
+  const personality = shuffle(traits).slice(0, 5);
 
   const taglineTemplates = [
     `${inputs.values[0] || "Quality"} meets design.`,
@@ -374,6 +386,11 @@ function generateBrand(inputs: BrandInputs): BrandResult {
     `Brands worth remembering.`,
     `From vision to identity.`,
     `The brand you've been looking for.`,
+    `${personality[0] || "Smart"}. ${personality[1] || "Simple"}. Yours.`,
+    `Built for the ${inputs.audiences[0]?.toLowerCase() || "bold"}.`,
+    `Not just a name — an identity.`,
+    `Crafted with ${(inputs.values[0] || "care").toLowerCase()}.`,
+    `Where ${inputs.industry.toLowerCase()} meets identity.`,
   ];
 
   return {
