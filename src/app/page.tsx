@@ -1,6 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
+
+/* ───────── Types ───────── */
+interface SliderValue {
+  label: [string, string];
+  value: number; // 0-100
+}
+
+interface BrandInputs {
+  name: string;
+  description: string;
+  industry: string;
+  values: string[];
+  audiences: string[];
+  sliders: SliderValue[];
+}
 
 interface BrandResult {
   name: string;
@@ -10,192 +25,373 @@ interface BrandResult {
   personality: string[];
   logoText: string;
   logoIcon: string;
+  sliderSnapshot: SliderValue[];
 }
 
+/* ───────── Constants ───────── */
 const INDUSTRIES = [
   "Technology", "Food & Beverage", "Health & Wellness", "Fashion", "Finance",
-  "Education", "Real Estate", "Travel", "Entertainment", "Non-Profit",
-  "E-Commerce", "Creative Agency", "SaaS", "Local Business", "Other"
+  "Education", "Real Estate", "Travel", "Entertainment", "Creative Agency",
+  "SaaS", "E-Commerce", "Local Business", "Non-Profit", "Other"
 ];
 
-const VIBES = [
-  "Minimal & Clean", "Bold & Energetic", "Luxurious & Premium", "Playful & Fun",
-  "Earthy & Organic", "Techy & Modern", "Classic & Timeless", "Edgy & Disruptive"
+const CORE_VALUES = [
+  "Innovation", "Trust", "Simplicity", "Quality", "Community",
+  "Sustainability", "Speed", "Creativity", "Transparency", "Empowerment",
+  "Authenticity", "Excellence", "Freedom", "Security", "Joy",
+  "Wisdom", "Courage", "Compassion", "Disruption", "Heritage"
 ];
 
-const PALETTES: Record<string, { name: string; hex: string }[][]> = {
-  "Minimal & Clean": [
-    [{ name: "Ivory", hex: "#FFFFF0" }, { name: "Charcoal", hex: "#36454F" }, { name: "Silver", hex: "#C0C0C0" }, { name: "Slate", hex: "#708090" }, { name: "Snow", hex: "#FFFAFA" }],
-    [{ name: "White", hex: "#FFFFFF" }, { name: "Black", hex: "#111111" }, { name: "Light Gray", hex: "#D4D4D4" }, { name: "Dark Gray", hex: "#404040" }, { name: "Accent", hex: "#0EA5E9" }],
+const AUDIENCES = [
+  "Small Business Owners", "Startup Founders", "Enterprise Teams", "Freelancers",
+  "Designers", "Developers", "Marketers", "Students", "Parents",
+  "Gen Z", "Millennials", "Professionals", "Creatives", "Executives", "Everyone"
+];
+
+// GV Brand Sprint personality sliders
+const DEFAULT_SLIDERS: SliderValue[] = [
+  { label: ["Friend", "Authority"], value: 50 },
+  { label: ["Young & Innovative", "Mature & Classic"], value: 50 },
+  { label: ["Playful", "Serious"], value: 50 },
+  { label: ["Mass Market", "Elite"], value: 50 },
+  { label: ["Casual", "Formal"], value: 50 },
+  { label: ["Loud & Bold", "Quiet & Subtle"], value: 50 },
+];
+
+/* ───────── Brand Generation Logic ───────── */
+
+function sliderToWeight(value: number): "low" | "mid" | "high" {
+  if (value < 35) return "low";
+  if (value > 65) return "high";
+  return "mid";
+}
+
+const COLOR_POOLS: Record<string, { name: string; hex: string }[]> = {
+  warmBold: [
+    { name: "Flame", hex: "#E25822" }, { name: "Sunset", hex: "#FF6B35" },
+    { name: "Marigold", hex: "#F7B32B" }, { name: "Crimson", hex: "#DC143C" },
+    { name: "Coral", hex: "#FF6F61" }, { name: "Amber", hex: "#FFBF00" },
   ],
-  "Bold & Energetic": [
-    [{ name: "Electric Red", hex: "#FF2D2D" }, { name: "Bright Yellow", hex: "#FFD600" }, { name: "Deep Black", hex: "#0A0A0A" }, { name: "White", hex: "#FFFFFF" }, { name: "Hot Pink", hex: "#FF69B4" }],
-    [{ name: "Neon Orange", hex: "#FF6B00" }, { name: "Electric Blue", hex: "#0066FF" }, { name: "Dark Navy", hex: "#0A1628" }, { name: "White", hex: "#FAFAFA" }, { name: "Lime", hex: "#84CC16" }],
+  coolCalm: [
+    { name: "Ocean", hex: "#006994" }, { name: "Sage", hex: "#9CAF88" },
+    { name: "Mist", hex: "#90AFC5" }, { name: "Slate", hex: "#708090" },
+    { name: "Frost", hex: "#E1E8ED" }, { name: "Steel", hex: "#4682B4" },
   ],
-  "Luxurious & Premium": [
-    [{ name: "Gold", hex: "#D4AF37" }, { name: "Deep Black", hex: "#0D0D0D" }, { name: "Cream", hex: "#FFFDD0" }, { name: "Burgundy", hex: "#800020" }, { name: "Champagne", hex: "#F7E7CE" }],
-    [{ name: "Rose Gold", hex: "#B76E79" }, { name: "Midnight", hex: "#191970" }, { name: "Pearl", hex: "#F0EAD6" }, { name: "Onyx", hex: "#353935" }, { name: "Ivory", hex: "#FFFFF0" }],
+  premiumDark: [
+    { name: "Onyx", hex: "#353935" }, { name: "Midnight", hex: "#191970" },
+    { name: "Burgundy", hex: "#800020" }, { name: "Gold", hex: "#D4AF37" },
+    { name: "Champagne", hex: "#F7E7CE" }, { name: "Ivory", hex: "#FFFFF0" },
   ],
-  "Playful & Fun": [
-    [{ name: "Coral", hex: "#FF7F50" }, { name: "Turquoise", hex: "#40E0D0" }, { name: "Sunshine", hex: "#FFD700" }, { name: "Lavender", hex: "#E6E6FA" }, { name: "Mint", hex: "#98FF98" }],
-    [{ name: "Bubblegum", hex: "#FF69B4" }, { name: "Sky Blue", hex: "#87CEEB" }, { name: "Lemon", hex: "#FFF44F" }, { name: "Peach", hex: "#FFDAB9" }, { name: "Lilac", hex: "#C8A2C8" }],
+  playfulBright: [
+    { name: "Electric Purple", hex: "#BF00FF" }, { name: "Hot Pink", hex: "#FF69B4" },
+    { name: "Turquoise", hex: "#40E0D0" }, { name: "Lime", hex: "#84CC16" },
+    { name: "Sunshine", hex: "#FFD700" }, { name: "Sky", hex: "#87CEEB" },
   ],
-  "Earthy & Organic": [
-    [{ name: "Terracotta", hex: "#CC5533" }, { name: "Sage", hex: "#9CAF88" }, { name: "Cream", hex: "#F5F0E1" }, { name: "Walnut", hex: "#5C4033" }, { name: "Sand", hex: "#D2B48C" }],
-    [{ name: "Olive", hex: "#808000" }, { name: "Clay", hex: "#B66A50" }, { name: "Linen", hex: "#FAF0E6" }, { name: "Moss", hex: "#4A5D23" }, { name: "Wheat", hex: "#F5DEB3" }],
+  earthyNatural: [
+    { name: "Terracotta", hex: "#CC5533" }, { name: "Olive", hex: "#808000" },
+    { name: "Walnut", hex: "#5C4033" }, { name: "Sand", hex: "#D2B48C" },
+    { name: "Linen", hex: "#FAF0E6" }, { name: "Moss", hex: "#4A5D23" },
   ],
-  "Techy & Modern": [
-    [{ name: "Cyber Blue", hex: "#00D4FF" }, { name: "Dark Matter", hex: "#0A0E17" }, { name: "Neon Green", hex: "#39FF14" }, { name: "Steel", hex: "#71797E" }, { name: "White", hex: "#F8F8F8" }],
-    [{ name: "Electric Purple", hex: "#BF00FF" }, { name: "Midnight", hex: "#0F0F1A" }, { name: "Cyan", hex: "#00FFFF" }, { name: "Graphite", hex: "#383838" }, { name: "Ice", hex: "#E0F7FA" }],
+  techModern: [
+    { name: "Cyber Blue", hex: "#00D4FF" }, { name: "Neon Green", hex: "#39FF14" },
+    { name: "Dark Matter", hex: "#0A0E17" }, { name: "Graphite", hex: "#383838" },
+    { name: "Ice", hex: "#E0F7FA" }, { name: "Electric", hex: "#7DF9FF" },
   ],
-  "Classic & Timeless": [
-    [{ name: "Navy", hex: "#001F3F" }, { name: "Ivory", hex: "#FFFFF0" }, { name: "Burgundy", hex: "#722F37" }, { name: "Gold", hex: "#CFB53B" }, { name: "Charcoal", hex: "#36454F" }],
-    [{ name: "Forest Green", hex: "#228B22" }, { name: "Cream", hex: "#FFFDD0" }, { name: "Mahogany", hex: "#C04000" }, { name: "Brass", hex: "#B5A642" }, { name: "Slate", hex: "#708090" }],
-  ],
-  "Edgy & Disruptive": [
-    [{ name: "Acid Green", hex: "#B0BF1A" }, { name: "Void Black", hex: "#050505" }, { name: "Blood Red", hex: "#880000" }, { name: "Chrome", hex: "#DBE2E9" }, { name: "Toxic Yellow", hex: "#E8E800" }],
-    [{ name: "Hot Magenta", hex: "#FF00FF" }, { name: "Abyss", hex: "#080808" }, { name: "Electric Lime", hex: "#CCFF00" }, { name: "Gunmetal", hex: "#2C3539" }, { name: "White", hex: "#FFFFFF" }],
+  neutralClean: [
+    { name: "White", hex: "#FFFFFF" }, { name: "Black", hex: "#111111" },
+    { name: "Light Gray", hex: "#D4D4D4" }, { name: "Charcoal", hex: "#36454F" },
+    { name: "Snow", hex: "#FFFAFA" }, { name: "Accent Blue", hex: "#0EA5E9" },
   ],
 };
 
-const FONT_PAIRS: Record<string, { heading: string; body: string }[]> = {
-  "Minimal & Clean": [{ heading: "Inter", body: "Inter" }, { heading: "Helvetica Neue", body: "Georgia" }],
-  "Bold & Energetic": [{ heading: "Impact", body: "Arial" }, { heading: "Bebas Neue", body: "Open Sans" }],
-  "Luxurious & Premium": [{ heading: "Playfair Display", body: "Lato" }, { heading: "Didot", body: "Garamond" }],
-  "Playful & Fun": [{ heading: "Fredoka One", body: "Nunito" }, { heading: "Baloo 2", body: "Quicksand" }],
-  "Earthy & Organic": [{ heading: "Merriweather", body: "Source Sans Pro" }, { heading: "Libre Baskerville", body: "Cabin" }],
-  "Techy & Modern": [{ heading: "JetBrains Mono", body: "Inter" }, { heading: "Space Grotesk", body: "IBM Plex Sans" }],
-  "Classic & Timeless": [{ heading: "Garamond", body: "Caslon" }, { heading: "Baskerville", body: "Palatino" }],
-  "Edgy & Disruptive": [{ heading: "Anton", body: "Roboto Mono" }, { heading: "Oswald", body: "Source Code Pro" }],
-};
+const FONT_PAIRS = [
+  { heading: "Inter", body: "Inter", vibe: "clean" },
+  { heading: "Playfair Display", body: "Lato", vibe: "premium" },
+  { heading: "Space Grotesk", body: "IBM Plex Sans", vibe: "tech" },
+  { heading: "Fredoka One", body: "Nunito", vibe: "playful" },
+  { heading: "Merriweather", body: "Source Sans Pro", vibe: "classic" },
+  { heading: "Anton", body: "Roboto Mono", vibe: "bold" },
+  { heading: "DM Serif Display", body: "DM Sans", vibe: "elegant" },
+  { heading: "JetBrains Mono", body: "Inter", vibe: "dev" },
+  { heading: "Libre Baskerville", body: "Cabin", vibe: "earthy" },
+  { heading: "Bebas Neue", body: "Open Sans", vibe: "energetic" },
+];
 
-const ICONS = ["◆", "✦", "⬡", "◎", "△", "⬢", "◈", "▲", "●", "✧", "⟁", "⊕", "⊗", "⬣", "◉"];
+const ICONS = ["◆", "✦", "⬡", "◎", "△", "⬢", "◈", "▲", "●", "✧", "⟁", "⊕", "◉", "⬣", "∞", "⊙"];
 
-const PERSONALITIES: Record<string, string[][]> = {
-  "Minimal & Clean": [["Refined", "Intentional", "Calm", "Precise"], ["Elegant", "Focused", "Quiet", "Thoughtful"]],
-  "Bold & Energetic": [["Fearless", "Loud", "Dynamic", "Unstoppable"], ["Fierce", "Vibrant", "Electric", "Relentless"]],
-  "Luxurious & Premium": [["Sophisticated", "Exclusive", "Curated", "Opulent"], ["Refined", "Prestigious", "Timeless", "Elegant"]],
-  "Playful & Fun": [["Joyful", "Witty", "Friendly", "Spontaneous"], ["Cheerful", "Quirky", "Warm", "Adventurous"]],
-  "Earthy & Organic": [["Grounded", "Authentic", "Nurturing", "Sustainable"], ["Wholesome", "Natural", "Honest", "Rooted"]],
-  "Techy & Modern": [["Innovative", "Sharp", "Forward", "Disruptive"], ["Smart", "Agile", "Precise", "Cutting-edge"]],
-  "Classic & Timeless": [["Trustworthy", "Dignified", "Enduring", "Authoritative"], ["Noble", "Established", "Reliable", "Respected"]],
-  "Edgy & Disruptive": [["Rebellious", "Raw", "Provocative", "Unapologetic"], ["Defiant", "Gritty", "Unconventional", "Bold"]],
-};
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
 
-function generateBrand(name: string, industry: string, vibe: string, description: string): BrandResult {
-  const palettes = PALETTES[vibe] || PALETTES["Minimal & Clean"];
-  const colors = palettes[Math.floor(Math.random() * palettes.length)];
-  const fontPairs = FONT_PAIRS[vibe] || FONT_PAIRS["Minimal & Clean"];
-  const fonts = fontPairs[Math.floor(Math.random() * fontPairs.length)];
-  const personalityOptions = PERSONALITIES[vibe] || PERSONALITIES["Minimal & Clean"];
-  const personality = personalityOptions[Math.floor(Math.random() * personalityOptions.length)];
-  const icon = ICONS[Math.floor(Math.random() * ICONS.length)];
+function pickN<T>(arr: T[], n: number): T[] {
+  const shuffled = [...arr].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, n);
+}
 
-  const taglines: Record<string, string[]> = {
-    "Technology": ["Built for tomorrow.", "Code meets craft.", "Engineering the future."],
-    "Food & Beverage": ["Taste the difference.", "Crafted with care.", "From our kitchen to yours."],
-    "Health & Wellness": ["Your best self, daily.", "Wellness redefined.", "Thrive naturally."],
-    "Fashion": ["Wear your story.", "Style without compromise.", "Designed to move."],
-    "Finance": ["Your money, your terms.", "Wealth made simple.", "Smart money moves."],
-    "Education": ["Learn without limits.", "Knowledge, amplified.", "Unlock your potential."],
-    "Real Estate": ["Find your place.", "Spaces that inspire.", "Home starts here."],
-    "Creative Agency": ["Ideas that move.", "Create fearlessly.", "Vision to reality."],
-    "SaaS": ["Simplify everything.", "Work smarter.", "Scale with confidence."],
-    "Local Business": ["Community first.", "Your neighbor, your partner.", "Local roots, real results."],
-  };
+function generateBrand(inputs: BrandInputs): BrandResult {
+  const s = inputs.sliders;
+  const friendAuth = s[0].value;
+  const youngMature = s[1].value;
+  const playfulSerious = s[2].value;
+  const massElite = s[3].value;
+  const casualFormal = s[4].value;
+  const loudQuiet = s[5].value;
 
-  const industryTaglines = taglines[industry] || ["Make your mark.", "Something different.", "Built to last."];
-  const tagline = industryTaglines[Math.floor(Math.random() * industryTaglines.length)];
+  // Determine color pool based on slider positions
+  let colorPool: { name: string; hex: string }[];
+  if (massElite > 65 && casualFormal > 60) {
+    colorPool = COLOR_POOLS.premiumDark;
+  } else if (playfulSerious < 35 && youngMature < 40) {
+    colorPool = COLOR_POOLS.playfulBright;
+  } else if (loudQuiet < 35 && playfulSerious < 50) {
+    colorPool = COLOR_POOLS.warmBold;
+  } else if (loudQuiet > 65 && casualFormal > 50) {
+    colorPool = COLOR_POOLS.coolCalm;
+  } else if (youngMature > 65 && friendAuth > 60) {
+    colorPool = COLOR_POOLS.neutralClean;
+  } else if (friendAuth < 40 && youngMature < 45) {
+    colorPool = COLOR_POOLS.techModern;
+  } else {
+    const pools = Object.values(COLOR_POOLS);
+    colorPool = pick(pools);
+  }
+  
+  const colors = pickN(colorPool, 5);
+
+  // Font selection based on personality
+  let fontVibe: string;
+  if (massElite > 65) fontVibe = "premium";
+  else if (playfulSerious < 35) fontVibe = "playful";
+  else if (casualFormal > 65) fontVibe = "elegant";
+  else if (youngMature < 35) fontVibe = "tech";
+  else if (loudQuiet < 35) fontVibe = "bold";
+  else if (youngMature > 65) fontVibe = "classic";
+  else fontVibe = "clean";
+
+  const matchingFonts = FONT_PAIRS.filter(f => f.vibe === fontVibe);
+  const fonts = matchingFonts.length > 0 ? pick(matchingFonts) : pick(FONT_PAIRS);
+
+  // Generate personality traits from sliders + values
+  const traits: string[] = [];
+  if (friendAuth < 40) traits.push("Approachable");
+  if (friendAuth > 60) traits.push("Authoritative");
+  if (youngMature < 40) traits.push("Innovative");
+  if (youngMature > 60) traits.push("Established");
+  if (playfulSerious < 40) traits.push("Playful");
+  if (playfulSerious > 60) traits.push("Serious");
+  if (massElite > 60) traits.push("Premium");
+  if (massElite < 40) traits.push("Accessible");
+  if (loudQuiet < 40) traits.push("Bold");
+  if (loudQuiet > 60) traits.push("Refined");
+  
+  // Add from selected values
+  traits.push(...inputs.values.slice(0, 4 - Math.min(traits.length, 2)));
+  const personality = traits.slice(0, 5);
+
+  // Tagline generation based on values and personality
+  const taglineTemplates = [
+    `${inputs.values[0] || "Quality"} meets design.`,
+    `Brand identity, ${personality[0]?.toLowerCase() || "redefined"}.`,
+    `Your brand, distilled.`,
+    `Where ${(inputs.values[0] || "vision").toLowerCase()} takes shape.`,
+    `${personality[0] || "Bold"} brands start here.`,
+    `Design with intention.`,
+    `Your identity, forged.`,
+    `Brands worth remembering.`,
+    `From vision to identity.`,
+    `The brand you've been looking for.`,
+  ];
 
   return {
-    name,
-    tagline,
+    name: inputs.name,
+    tagline: pick(taglineTemplates),
     colors,
-    fonts,
+    fonts: { heading: fonts.heading, body: fonts.body },
     personality,
-    logoText: name.toUpperCase(),
-    logoIcon: icon,
+    logoText: inputs.name.toUpperCase(),
+    logoIcon: pick(ICONS),
+    sliderSnapshot: [...inputs.sliders],
   };
 }
 
 function saveBrand(brand: BrandResult) {
-  const saved = JSON.parse(localStorage.getItem("brandforge_brands") || "[]");
-  saved.push({ ...brand, createdAt: new Date().toISOString() });
-  localStorage.setItem("brandforge_brands", JSON.stringify(saved));
+  try {
+    const saved = JSON.parse(localStorage.getItem("logotruffle_brands") || "[]");
+    saved.push({ ...brand, createdAt: new Date().toISOString() });
+    localStorage.setItem("logotruffle_brands", JSON.stringify(saved));
+  } catch {}
 }
+
+/* ───────── Components ───────── */
+
+function Slider({ slider, onChange }: { slider: SliderValue; onChange: (v: number) => void }) {
+  return (
+    <div className="mb-5">
+      <div className="flex justify-between text-xs text-neutral-400 mb-2">
+        <span>{slider.label[0]}</span>
+        <span>{slider.label[1]}</span>
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={slider.value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full h-2 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
+      />
+    </div>
+  );
+}
+
+function ChipSelector({ options, selected, onToggle, max }: {
+  options: string[];
+  selected: string[];
+  onToggle: (v: string) => void;
+  max: number;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((opt) => {
+        const isSelected = selected.includes(opt);
+        const isDisabled = !isSelected && selected.length >= max;
+        return (
+          <button
+            key={opt}
+            onClick={() => !isDisabled && onToggle(opt)}
+            disabled={isDisabled}
+            className={`px-3 py-2 rounded-lg text-sm border transition-all ${
+              isSelected
+                ? "border-purple-500 bg-purple-500/20 text-purple-300"
+                : isDisabled
+                ? "border-neutral-800 bg-neutral-900/50 text-neutral-600 cursor-not-allowed"
+                : "border-neutral-800 bg-neutral-900 text-neutral-300 hover:border-neutral-600"
+            }`}
+          >
+            {opt}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ───────── Main Page ───────── */
 
 export default function Home() {
   const [step, setStep] = useState(0);
-  const [name, setName] = useState("");
-  const [industry, setIndustry] = useState("");
-  const [vibe, setVibe] = useState("");
-  const [description, setDescription] = useState("");
+  const [inputs, setInputs] = useState<BrandInputs>({
+    name: "",
+    description: "",
+    industry: "",
+    values: [],
+    audiences: [],
+    sliders: DEFAULT_SLIDERS.map(s => ({ ...s })),
+  });
   const [result, setResult] = useState<BrandResult | null>(null);
   const [generating, setGenerating] = useState(false);
+
+  const totalSteps = 6;
+
+  const updateSlider = useCallback((index: number, value: number) => {
+    setInputs(prev => {
+      const newSliders = [...prev.sliders];
+      newSliders[index] = { ...newSliders[index], value };
+      return { ...prev, sliders: newSliders };
+    });
+  }, []);
+
+  const toggleValue = useCallback((v: string) => {
+    setInputs(prev => ({
+      ...prev,
+      values: prev.values.includes(v) ? prev.values.filter(x => x !== v) : [...prev.values, v],
+    }));
+  }, []);
+
+  const toggleAudience = useCallback((v: string) => {
+    setInputs(prev => ({
+      ...prev,
+      audiences: prev.audiences.includes(v) ? prev.audiences.filter(x => x !== v) : [...prev.audiences, v],
+    }));
+  }, []);
 
   const handleGenerate = () => {
     setGenerating(true);
     setTimeout(() => {
-      const brand = generateBrand(name, industry, vibe, description);
+      const brand = generateBrand(inputs);
       setResult(brand);
       saveBrand(brand);
       setGenerating(false);
-      setStep(4);
+      setStep(totalSteps);
     }, 1500);
   };
 
   const handleRegenerate = () => {
     setGenerating(true);
     setTimeout(() => {
-      const brand = generateBrand(name, industry, vibe, description);
+      const brand = generateBrand(inputs);
       setResult(brand);
       saveBrand(brand);
       setGenerating(false);
     }, 800);
   };
 
+  const reset = () => {
+    setStep(0);
+    setResult(null);
+    setInputs({
+      name: "",
+      description: "",
+      industry: "",
+      values: [],
+      audiences: [],
+      sliders: DEFAULT_SLIDERS.map(s => ({ ...s })),
+    });
+  };
+
   return (
-    <main className="min-h-screen flex flex-col items-center p-4 pt-12 sm:p-6 sm:pt-16">
+    <main className="min-h-screen flex flex-col items-center p-4 pt-10 sm:p-6 sm:pt-16">
       {/* Header */}
-      <div className="mb-8 sm:mb-12 text-center">
+      <div className="mb-6 sm:mb-10 text-center">
         <h1 className="text-3xl sm:text-5xl font-bold tracking-tight mb-1">
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-orange-400">
-            BrandForge
+            LogoTruffle
           </span>
+          {" "}
+          <span className="text-2xl sm:text-4xl">🍫</span>
         </h1>
-        <p className="text-neutral-400 text-sm sm:text-lg">Generate a complete brand identity in seconds</p>
+        <p className="text-neutral-400 text-sm sm:text-lg">Seek out your rare brand</p>
       </div>
 
       {/* Step Indicator */}
-      {step < 4 && (
-        <div className="flex gap-2 mb-6">
-          {[0, 1, 2, 3].map((s) => (
+      {step < totalSteps && (
+        <div className="flex gap-1.5 mb-6">
+          {Array.from({ length: totalSteps }, (_, i) => (
             <div
-              key={s}
-              className={`h-1.5 w-10 sm:w-12 rounded-full transition-colors ${
-                s <= step ? "bg-gradient-to-r from-purple-400 to-pink-500" : "bg-neutral-800"
+              key={i}
+              className={`h-1.5 w-8 sm:w-10 rounded-full transition-colors ${
+                i <= step ? "bg-gradient-to-r from-purple-400 to-pink-500" : "bg-neutral-800"
               }`}
             />
           ))}
         </div>
       )}
 
-      {/* Steps */}
       <div className="w-full max-w-lg">
+        {/* Step 0: Brand Name */}
         {step === 0 && (
-          <div className="space-y-4 animate-fade-in">
-            <label className="block text-sm text-neutral-400 mb-1">What&apos;s your brand name?</label>
+          <div className="space-y-4">
+            <label className="block text-sm text-neutral-400">What&apos;s your brand name?</label>
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={inputs.name}
+              onChange={(e) => setInputs(prev => ({ ...prev, name: e.target.value }))}
               placeholder="e.g. Luminary"
               className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-lg focus:outline-none focus:border-purple-500 transition-colors"
               autoFocus
             />
             <button
-              onClick={() => name.trim() && setStep(1)}
-              disabled={!name.trim()}
+              onClick={() => inputs.name.trim() && setStep(1)}
+              disabled={!inputs.name.trim()}
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl disabled:opacity-30 hover:opacity-90 transition-opacity"
             >
               Next →
@@ -203,19 +399,16 @@ export default function Home() {
           </div>
         )}
 
+        {/* Step 1: Industry */}
         {step === 1 && (
-          <div className="space-y-4 animate-fade-in">
-            <label className="block text-sm text-neutral-400 mb-1">What industry?</label>
+          <div className="space-y-4">
+            <label className="block text-sm text-neutral-400">What industry are you in?</label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {INDUSTRIES.map((ind) => (
                 <button
                   key={ind}
-                  onClick={() => { setIndustry(ind); setStep(2); }}
-                  className={`px-3 py-3 rounded-lg text-sm border transition-colors ${
-                    industry === ind
-                      ? "border-purple-500 bg-purple-500/20 text-purple-300"
-                      : "border-neutral-800 bg-neutral-900 text-neutral-300 hover:border-neutral-600"
-                  }`}
+                  onClick={() => { setInputs(prev => ({ ...prev, industry: ind })); setStep(2); }}
+                  className="px-3 py-3 rounded-lg text-sm border border-neutral-800 bg-neutral-900 text-neutral-300 hover:border-neutral-600 transition-colors"
                 >
                   {ind}
                 </button>
@@ -225,50 +418,96 @@ export default function Home() {
           </div>
         )}
 
+        {/* Step 2: Core Values (pick up to 3) */}
         {step === 2 && (
-          <div className="space-y-4 animate-fade-in">
-            <label className="block text-sm text-neutral-400 mb-1">What vibe?</label>
-            <div className="grid grid-cols-2 gap-2">
-              {VIBES.map((v) => (
-                <button
-                  key={v}
-                  onClick={() => { setVibe(v); setStep(3); }}
-                  className={`px-4 py-4 rounded-lg text-sm border transition-colors ${
-                    vibe === v
-                      ? "border-purple-500 bg-purple-500/20 text-purple-300"
-                      : "border-neutral-800 bg-neutral-900 text-neutral-300 hover:border-neutral-600"
-                  }`}
-                >
-                  {v}
-                </button>
-              ))}
-            </div>
+          <div className="space-y-4">
+            <label className="block text-sm text-neutral-400">
+              What are your brand&apos;s core values? <span className="text-neutral-600">(pick up to 3)</span>
+            </label>
+            <ChipSelector options={CORE_VALUES} selected={inputs.values} onToggle={toggleValue} max={3} />
+            <button
+              onClick={() => inputs.values.length > 0 && setStep(3)}
+              disabled={inputs.values.length === 0}
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl disabled:opacity-30 hover:opacity-90 transition-opacity"
+            >
+              Next →
+            </button>
             <button onClick={() => setStep(1)} className="text-sm text-neutral-500 hover:text-neutral-300">← Back</button>
           </div>
         )}
 
+        {/* Step 3: Target Audience (pick up to 3) */}
         {step === 3 && (
-          <div className="space-y-4 animate-fade-in">
-            <label className="block text-sm text-neutral-400 mb-1">Describe your brand in a sentence (optional)</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g. A premium coffee subscription for remote workers..."
-              className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-base focus:outline-none focus:border-purple-500 transition-colors resize-none h-24"
-            />
+          <div className="space-y-4">
+            <label className="block text-sm text-neutral-400">
+              Who&apos;s your target audience? <span className="text-neutral-600">(pick up to 3)</span>
+            </label>
+            <ChipSelector options={AUDIENCES} selected={inputs.audiences} onToggle={toggleAudience} max={3} />
             <button
-              onClick={handleGenerate}
-              disabled={generating}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+              onClick={() => inputs.audiences.length > 0 && setStep(4)}
+              disabled={inputs.audiences.length === 0}
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl disabled:opacity-30 hover:opacity-90 transition-opacity"
             >
-              {generating ? "✨ Generating..." : "Generate Brand ✨"}
+              Next →
             </button>
             <button onClick={() => setStep(2)} className="text-sm text-neutral-500 hover:text-neutral-300">← Back</button>
           </div>
         )}
 
-        {step === 4 && result && (
-          <div className="space-y-6 animate-fade-in w-full">
+        {/* Step 4: Personality Sliders (GV Brand Sprint) */}
+        {step === 4 && (
+          <div className="space-y-4">
+            <label className="block text-sm text-neutral-400 mb-2">
+              Position your brand personality
+            </label>
+            <p className="text-xs text-neutral-600 mb-4">Drag each slider to where your brand sits on the spectrum</p>
+            {inputs.sliders.map((slider, i) => (
+              <Slider key={i} slider={slider} onChange={(v) => updateSlider(i, v)} />
+            ))}
+            <button
+              onClick={() => setStep(5)}
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity"
+            >
+              Next →
+            </button>
+            <button onClick={() => setStep(3)} className="text-sm text-neutral-500 hover:text-neutral-300">← Back</button>
+          </div>
+        )}
+
+        {/* Step 5: Description + Generate */}
+        {step === 5 && (
+          <div className="space-y-4">
+            <label className="block text-sm text-neutral-400">Describe your brand in a sentence <span className="text-neutral-600">(optional)</span></label>
+            <textarea
+              value={inputs.description}
+              onChange={(e) => setInputs(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="e.g. A premium coffee subscription for remote workers who care about sustainability..."
+              className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-base focus:outline-none focus:border-purple-500 transition-colors resize-none h-24"
+            />
+
+            {/* Summary */}
+            <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-4 text-sm space-y-2">
+              <p className="text-neutral-400">Summary</p>
+              <p><span className="text-neutral-500">Name:</span> <span className="text-white">{inputs.name}</span></p>
+              <p><span className="text-neutral-500">Industry:</span> <span className="text-white">{inputs.industry}</span></p>
+              <p><span className="text-neutral-500">Values:</span> <span className="text-white">{inputs.values.join(", ")}</span></p>
+              <p><span className="text-neutral-500">Audience:</span> <span className="text-white">{inputs.audiences.join(", ")}</span></p>
+            </div>
+
+            <button
+              onClick={handleGenerate}
+              disabled={generating}
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {generating ? "🍫 Hunting for truffles..." : "Generate Brand 🍫"}
+            </button>
+            <button onClick={() => setStep(4)} className="text-sm text-neutral-500 hover:text-neutral-300">← Back</button>
+          </div>
+        )}
+
+        {/* Results */}
+        {step === totalSteps && result && (
+          <div className="space-y-6 w-full">
             {/* Logo Preview */}
             <div className="text-center p-6 sm:p-8 rounded-2xl border border-neutral-800 bg-neutral-900/50">
               <div className="text-4xl sm:text-5xl mb-2">{result.logoIcon}</div>
@@ -300,14 +539,14 @@ export default function Home() {
             {/* Typography */}
             <div>
               <h3 className="text-sm text-neutral-400 mb-3 uppercase tracking-wider">Typography</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="bg-neutral-900 rounded-xl p-4 border border-neutral-800">
                   <p className="text-xs text-neutral-500 mb-1">Heading</p>
-                  <p className="text-2xl font-bold" style={{ fontFamily: result.fonts.heading }}>{result.fonts.heading}</p>
+                  <p className="text-xl sm:text-2xl font-bold" style={{ fontFamily: result.fonts.heading }}>{result.fonts.heading}</p>
                 </div>
                 <div className="bg-neutral-900 rounded-xl p-4 border border-neutral-800">
                   <p className="text-xs text-neutral-500 mb-1">Body</p>
-                  <p className="text-lg" style={{ fontFamily: result.fonts.body }}>{result.fonts.body}</p>
+                  <p className="text-base sm:text-lg" style={{ fontFamily: result.fonts.body }}>{result.fonts.body}</p>
                 </div>
               </div>
             </div>
@@ -317,27 +556,48 @@ export default function Home() {
               <h3 className="text-sm text-neutral-400 mb-3 uppercase tracking-wider">Brand Personality</h3>
               <div className="flex gap-2 flex-wrap">
                 {result.personality.map((trait) => (
-                  <span key={trait} className="px-4 py-2 bg-neutral-900 border border-neutral-800 rounded-full text-sm text-neutral-300">
+                  <span key={trait} className="px-3 py-1.5 bg-neutral-900 border border-neutral-800 rounded-full text-sm text-neutral-300">
                     {trait}
                   </span>
                 ))}
               </div>
             </div>
 
+            {/* Personality Spectrum */}
+            <div>
+              <h3 className="text-sm text-neutral-400 mb-3 uppercase tracking-wider">Brand Spectrum</h3>
+              <div className="bg-neutral-900 rounded-xl p-4 border border-neutral-800 space-y-3">
+                {result.sliderSnapshot.map((s, i) => (
+                  <div key={i}>
+                    <div className="flex justify-between text-[10px] sm:text-xs text-neutral-500 mb-1">
+                      <span>{s.label[0]}</span>
+                      <span>{s.label[1]}</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-neutral-800 rounded-full relative">
+                      <div
+                        className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-purple-500 rounded-full"
+                        style={{ left: `calc(${s.value}% - 6px)` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Actions */}
-            <div className="flex gap-3 pt-4">
+            <div className="flex gap-3 pt-2 pb-8">
               <button
                 onClick={handleRegenerate}
                 disabled={generating}
                 className="flex-1 bg-neutral-800 text-white font-semibold py-3 rounded-xl hover:bg-neutral-700 transition-colors disabled:opacity-50"
               >
-                {generating ? "Regenerating..." : "🔄 Regenerate"}
+                {generating ? "..." : "🔄 Regenerate"}
               </button>
               <button
-                onClick={() => { setStep(0); setResult(null); setName(""); setIndustry(""); setVibe(""); setDescription(""); }}
+                onClick={reset}
                 className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl hover:opacity-90 transition-opacity"
               >
-                ✨ New Brand
+                🍫 New Brand
               </button>
             </div>
           </div>
