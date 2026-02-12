@@ -217,7 +217,7 @@ function generateBrand(inputs: BrandInputs): BrandResult {
     fonts: { heading: fonts.heading, body: fonts.body },
     personality,
     logoText: inputs.name.toUpperCase(),
-    logoIcon: pick(ICONS),
+    logoIcon: "◆",
     sliderSnapshot: [...inputs.sliders],
   };
 }
