@@ -226,8 +226,8 @@ function saveBrand(brand: BrandResult) {
 
 function Slider({ slider, onChange }: { slider: SliderValue; onChange: (v: number) => void }) {
   return (
-    <div className="mb-5">
-      <div className="flex justify-between text-xs text-neutral-400 mb-2">
+    <div className="mb-6">
+      <div className="flex justify-between text-xs sm:text-sm text-neutral-400 mb-2">
         <span>{slider.label[0]}</span>
         <span>{slider.label[1]}</span>
       </div>
@@ -237,7 +237,8 @@ function Slider({ slider, onChange }: { slider: SliderValue; onChange: (v: numbe
         max={100}
         value={slider.value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full h-2 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
+        className="w-full h-3 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-purple-500 touch-pan-y"
+        style={{ WebkitAppearance: "none", padding: "8px 0" }}
       />
     </div>
   );
@@ -259,12 +260,12 @@ function ChipSelector({ options, selected, onToggle, max }: {
             key={opt}
             onClick={() => !isDisabled && onToggle(opt)}
             disabled={isDisabled}
-            className={`px-3 py-2 rounded-lg text-sm border transition-all ${
+            className={`px-4 py-3 rounded-xl text-sm border transition-all active:scale-95 select-none ${
               isSelected
-                ? "border-purple-500 bg-purple-500/20 text-purple-300"
+                ? "border-purple-500 bg-purple-500/20 text-purple-300 shadow-sm shadow-purple-500/20"
                 : isDisabled
                 ? "border-neutral-800 bg-neutral-900/50 text-neutral-600 cursor-not-allowed"
-                : "border-neutral-800 bg-neutral-900 text-neutral-300 hover:border-neutral-600"
+                : "border-neutral-800 bg-neutral-900 text-neutral-300 hover:border-neutral-600 active:bg-neutral-800"
             }`}
           >
             {opt}
@@ -349,7 +350,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center p-4 pt-10 sm:p-6 sm:pt-16">
+    <main className="min-h-screen flex flex-col items-center p-5 pt-10 pb-16 sm:p-6 sm:pt-16" style={{ paddingBottom: "env(safe-area-inset-bottom, 4rem)" }}>
       {/* Header */}
       <div className="mb-6 sm:mb-10 text-center">
         <h1 className="text-3xl sm:text-5xl font-bold tracking-tight mb-1">
@@ -408,13 +409,13 @@ export default function Home() {
                 <button
                   key={ind}
                   onClick={() => { setInputs(prev => ({ ...prev, industry: ind })); setStep(2); }}
-                  className="px-3 py-3 rounded-lg text-sm border border-neutral-800 bg-neutral-900 text-neutral-300 hover:border-neutral-600 transition-colors"
+                  className="px-4 py-4 rounded-xl text-sm border border-neutral-800 bg-neutral-900 text-neutral-300 hover:border-neutral-600 active:bg-neutral-800 active:scale-95 transition-all select-none"
                 >
                   {ind}
                 </button>
               ))}
             </div>
-            <button onClick={() => setStep(0)} className="text-sm text-neutral-500 hover:text-neutral-300">← Back</button>
+            <button onClick={() => setStep(0)} className="text-sm text-neutral-500 hover:text-neutral-300 py-3 px-2 -ml-2 active:text-neutral-100 select-none">← Back</button>
           </div>
         )}
 
@@ -432,7 +433,7 @@ export default function Home() {
             >
               Next →
             </button>
-            <button onClick={() => setStep(1)} className="text-sm text-neutral-500 hover:text-neutral-300">← Back</button>
+            <button onClick={() => setStep(1)} className="text-sm text-neutral-500 hover:text-neutral-300 py-3 px-2 -ml-2 active:text-neutral-100 select-none">← Back</button>
           </div>
         )}
 
@@ -450,7 +451,7 @@ export default function Home() {
             >
               Next →
             </button>
-            <button onClick={() => setStep(2)} className="text-sm text-neutral-500 hover:text-neutral-300">← Back</button>
+            <button onClick={() => setStep(2)} className="text-sm text-neutral-500 hover:text-neutral-300 py-3 px-2 -ml-2 active:text-neutral-100 select-none">← Back</button>
           </div>
         )}
 
@@ -470,7 +471,7 @@ export default function Home() {
             >
               Next →
             </button>
-            <button onClick={() => setStep(3)} className="text-sm text-neutral-500 hover:text-neutral-300">← Back</button>
+            <button onClick={() => setStep(3)} className="text-sm text-neutral-500 hover:text-neutral-300 py-3 px-2 -ml-2 active:text-neutral-100 select-none">← Back</button>
           </div>
         )}
 
@@ -501,7 +502,7 @@ export default function Home() {
             >
               {generating ? "🍫 Hunting for truffles..." : "Generate Brand 🍫"}
             </button>
-            <button onClick={() => setStep(4)} className="text-sm text-neutral-500 hover:text-neutral-300">← Back</button>
+            <button onClick={() => setStep(4)} className="text-sm text-neutral-500 hover:text-neutral-300 py-3 px-2 -ml-2 active:text-neutral-100 select-none">← Back</button>
           </div>
         )}
 

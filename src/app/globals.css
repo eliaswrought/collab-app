@@ -1,1 +1,29 @@
 @import "tailwindcss";
+
+/* Mobile-friendly range slider thumb */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a855f7, #ec4899);
+  cursor: pointer;
+  border: 2px solid #1a1a1a;
+  box-shadow: 0 0 6px rgba(168, 85, 247, 0.4);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a855f7, #ec4899);
+  cursor: pointer;
+  border: 2px solid #1a1a1a;
+  box-shadow: 0 0 6px rgba(168, 85, 247, 0.4);
+}
+
+/* Prevent text selection on interactive elements */
+button, input[type="range"] {
+  -webkit-tap-highlight-color: transparent;
+}
