@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
+import { Palette, TextAa, MaskHappy, Sliders, Images, Globe, ArrowsClockwise, Shuffle, CaretDown, ArrowDown, Check, Leaf, Shapes } from "@phosphor-icons/react";
 
 /* ───────── Types ───────── */
 interface SliderValue {
@@ -27,11 +28,11 @@ interface BrandInputs {
 
 const LOGO_STYLES = [
   { id: "geometric", name: "Geometric", desc: "Clean shapes, symmetry, mathematical precision", icon: "◇" },
-  { id: "organic", name: "Organic", desc: "Flowing forms, natural curves, hand-crafted feel", icon: "🌿" },
+  { id: "organic", name: "Organic", desc: "Flowing forms, natural curves, hand-crafted feel", icon: "leaf" },
   { id: "typographic", name: "Typographic", desc: "The name IS the logo, creative letterforms", icon: "Aa" },
   { id: "abstract", name: "Abstract", desc: "Conceptual marks, unique symbols", icon: "✦" },
   { id: "monogram", name: "Monogram", desc: "Initials or letter-based mark", icon: "M" },
-  { id: "mascot", name: "Mascot", desc: "Character or icon-based", icon: "🎭" },
+  { id: "mascot", name: "Mascot", desc: "Character or icon-based", icon: "mask" },
 ];
 
 interface BrandResult {
@@ -474,7 +475,7 @@ function ChipSelector({ options, selected, onToggle, max }: {
 }
 
 /* ───────── Transition wrapper ───────── */
-function AccordionSection({ emoji, title, defaultOpen = false, children }: { emoji: string; title: string; defaultOpen?: boolean; children: React.ReactNode }) {
+function AccordionSection({ icon, title, defaultOpen = false, children }: { icon: React.ReactNode; title: string; defaultOpen?: boolean; children: React.ReactNode }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="border border-neutral-800 rounded-xl overflow-hidden bg-neutral-900/50">
@@ -482,22 +483,13 @@ function AccordionSection({ emoji, title, defaultOpen = false, children }: { emo
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-neutral-800/50 transition-colors"
       >
-        <span className="text-sm font-medium text-neutral-200">
-          {emoji} {title}
+        <span className="text-sm font-medium text-neutral-200 flex items-center gap-2">
+          {icon} {title}
         </span>
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+        <CaretDown
+          size={16}
           className={`text-neutral-500 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-        >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
+        />
       </button>
       <div
         className="grid transition-all duration-200 ease-in-out"
@@ -849,7 +841,7 @@ export default function Home() {
                       }`}
                     >
                       <CardContent className="p-4 text-center">
-                        <div className="text-2xl mb-2">{style.icon}</div>
+                        <div className="text-2xl mb-2">{style.icon === "leaf" ? <Leaf size={28} weight="duotone" className="mx-auto" /> : style.icon === "mask" ? <MaskHappy size={28} weight="duotone" className="mx-auto" /> : style.icon}</div>
                         <p className={`font-semibold text-sm ${isSelected ? "text-purple-300" : "text-neutral-200"}`}>{style.name}</p>
                         <p className="text-xs text-neutral-500 mt-1">{style.desc}</p>
                       </CardContent>
@@ -982,14 +974,14 @@ export default function Home() {
                 {/* Scroll hint */}
                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-neutral-600 text-xs flex flex-col items-center gap-1 animate-pulse">
                   <span>Scroll to explore</span>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                  <ArrowDown size={16} />
                 </div>
               </div>
 
               {/* ── Accordion Sections ── */}
               <div className="space-y-2 mt-8">
                 {/* Accordion: Colors */}
-                <AccordionSection emoji="🎨" title="Colors" defaultOpen={false}>
+                <AccordionSection icon={<Palette size={18} weight="duotone" />} title="Colors" defaultOpen={false}>
                   <div className="flex gap-1.5 sm:gap-2 rounded-xl overflow-hidden">
                     {result.colors.map((c) => (
                       <div key={c.hex} className="flex-1 group cursor-pointer" onClick={() => navigator.clipboard.writeText(c.hex)}>
@@ -1006,7 +998,7 @@ export default function Home() {
                 </AccordionSection>
 
                 {/* Accordion: Typography */}
-                <AccordionSection emoji="🔤" title="Typography" defaultOpen={false}>
+                <AccordionSection icon={<TextAa size={18} weight="duotone" />} title="Typography" defaultOpen={false}>
                   <div className="grid grid-cols-2 gap-3">
                     <Card className="bg-neutral-900 border-neutral-800">
                       <CardContent className="p-4">
@@ -1024,7 +1016,7 @@ export default function Home() {
                 </AccordionSection>
 
                 {/* Accordion: Personality */}
-                <AccordionSection emoji="🎭" title="Personality" defaultOpen={false}>
+                <AccordionSection icon={<MaskHappy size={18} weight="duotone" />} title="Personality" defaultOpen={false}>
                   <div className="flex gap-2 flex-wrap">
                     {result.personality.map((trait) => (
                       <Badge key={trait} variant="outline" className="px-3 py-1.5 bg-neutral-900 border-neutral-800 text-neutral-300 text-sm">
@@ -1035,7 +1027,7 @@ export default function Home() {
                 </AccordionSection>
 
                 {/* Accordion: Brand Spectrum */}
-                <AccordionSection emoji="📊" title="Brand Spectrum" defaultOpen={false}>
+                <AccordionSection icon={<Sliders size={18} weight="duotone" />} title="Brand Spectrum" defaultOpen={false}>
                   <div className="space-y-4">
                     {inputs.sliders.map((s, i) => (
                       <div key={i} className="mb-4">
@@ -1070,14 +1062,14 @@ export default function Home() {
                       disabled={generating}
                       className="w-full mt-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-2.5 h-auto rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-purple-500/20 border-0"
                     >
-                      {generating ? "Regenerating..." : "✨ Apply Changes"}
+                      {generating ? "Regenerating..." : <><Shapes size={16} weight="duotone" className="inline mr-1" />Apply Changes</>}
                     </Button>
                   </div>
                 </AccordionSection>
 
                 {/* Accordion: Logo Variants */}
                 {logoVariants.length > 0 && (
-                  <AccordionSection emoji="🖼️" title="Logo Variants" defaultOpen={false}>
+                  <AccordionSection icon={<Images size={18} weight="duotone" />} title="Logo Variants" defaultOpen={false}>
                     <div className="grid grid-cols-2 gap-3">
                       {logoVariants.map((url, i) => {
                         if (variantLoadState[i] === "error") return null;
@@ -1105,7 +1097,7 @@ export default function Home() {
                             />
                             {isSelected && (
                               <div className="absolute top-2 right-2 bg-purple-500 text-white text-xs px-2 py-0.5 rounded-full">
-                                ✓ Selected
+                                <Check size={14} weight="bold" className="inline mr-0.5" /> Selected
                               </div>
                             )}
                           </div>
@@ -1118,7 +1110,7 @@ export default function Home() {
                         variant="ghost"
                         className="mt-3 text-sm text-neutral-400 hover:text-white w-full"
                       >
-                        🎲 More Like This
+                        <Shuffle size={16} weight="duotone" className="inline mr-1" />More Like This
                       </Button>
                     )}
                   </AccordionSection>
@@ -1131,7 +1123,7 @@ export default function Home() {
                   onClick={() => setShowPreview(true)}
                   className="w-full bg-gradient-to-r from-indigo-500 to-cyan-500 text-white font-semibold py-3 h-auto rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-indigo-500/20 border-0"
                 >
-                  🌐 Preview as Website
+                  <Globe size={18} weight="duotone" className="inline mr-1.5" />Preview as Website
                 </Button>
                 <div className="flex gap-3">
                   <Button
@@ -1140,7 +1132,7 @@ export default function Home() {
                     variant="secondary"
                     className="flex-1 bg-neutral-800 text-white font-semibold py-3 h-auto rounded-xl hover:bg-neutral-700 transition-colors disabled:opacity-50"
                   >
-                    {generating ? "..." : "🔄 Regenerate"}
+                    {generating ? "..." : <><ArrowsClockwise size={16} weight="duotone" className="inline mr-1" />Regenerate</>}
                   </Button>
                   <Button
                     onClick={reset}
