@@ -976,7 +976,8 @@ export default function Home() {
                           step={1}
                           value={s.value}
                           onChange={(e) => updateSlider(i, Number(e.target.value))}
-                          className="w-full h-3 appearance-none rounded-full bg-neutral-800 cursor-pointer accent-purple-500 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-purple-400 [&::-webkit-slider-thumb]:to-pink-500 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-neutral-900 [&::-webkit-slider-thumb]:shadow-lg"
+                          style={{ WebkitAppearance: 'none', appearance: 'none', width: '100%', height: '12px', borderRadius: '9999px', background: '#262626', cursor: 'pointer', outline: 'none', margin: '8px 0' }}
+                          className="ios-range-fix"
                         />
                       </div>
                     ))}

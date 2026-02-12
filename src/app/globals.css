@@ -32,6 +32,27 @@ button, input[type="range"] {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* iOS Safari range input fix — prevent parent scroll from eating touch events */
+input[type="range"] {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  position: relative;
+  z-index: 10;
+}
+
+/* Make the touch target larger on mobile */
+@media (pointer: coarse) {
+  input[type="range"] {
+    min-height: 44px;
+    padding: 12px 0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    width: 32px;
+    height: 32px;
+  }
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
