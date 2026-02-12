@@ -641,18 +641,19 @@ export default function Home() {
                 </Card>
               )}
 
-              {/* Fallback Unicode Logo */}
-              <Card className="bg-neutral-900/50 border-neutral-800 text-center">
-                <CardContent className="p-6 sm:p-8">
-                  <div className="text-4xl sm:text-5xl mb-2">{result.logoIcon}</div>
-                  <h2 className="text-2xl sm:text-3xl font-bold tracking-widest" style={{ fontFamily: result.fonts.heading }}>
-                    {result.logoText}
-                  </h2>
-                  <p className="text-neutral-400 mt-2 italic" style={{ fontFamily: result.fonts.body }}>
-                    {result.tagline}
-                  </p>
-                </CardContent>
-              </Card>
+              {/* Brand Name & Tagline */}
+              {!logoUrl && (
+                <Card className="bg-neutral-900/50 border-neutral-800 text-center">
+                  <CardContent className="p-6 sm:p-8">
+                    <h2 className="text-2xl sm:text-3xl font-bold tracking-widest" style={{ fontFamily: result.fonts.heading }}>
+                      {result.name}
+                    </h2>
+                    <p className="text-neutral-400 mt-2 italic" style={{ fontFamily: result.fonts.body }}>
+                      {result.tagline}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Colors */}
               <div>
