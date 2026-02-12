@@ -22,7 +22,17 @@ interface BrandInputs {
   values: string[];
   audiences: string[];
   sliders: SliderValue[];
+  logoStyle: string;
 }
+
+const LOGO_STYLES = [
+  { id: "geometric", name: "Geometric", desc: "Clean shapes, symmetry, mathematical precision", icon: "◇" },
+  { id: "organic", name: "Organic", desc: "Flowing forms, natural curves, hand-crafted feel", icon: "🌿" },
+  { id: "typographic", name: "Typographic", desc: "The name IS the logo, creative letterforms", icon: "Aa" },
+  { id: "abstract", name: "Abstract", desc: "Conceptual marks, unique symbols", icon: "✦" },
+  { id: "monogram", name: "Monogram", desc: "Initials or letter-based mark", icon: "M" },
+  { id: "mascot", name: "Mascot", desc: "Character or icon-based", icon: "🎭" },
+];
 
 interface BrandResult {
   name: string;
@@ -310,6 +320,7 @@ export default function Home() {
     values: [],
     audiences: [],
     sliders: DEFAULT_SLIDERS.map(s => ({ ...s })),
+    logoStyle: "",
   });
   const [result, setResult] = useState<BrandResult | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -318,8 +329,11 @@ export default function Home() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoLoading, setLogoLoading] = useState(false);
   const [logoError, setLogoError] = useState(false);
+  const [logoVariants, setLogoVariants] = useState<string[]>([]);
+  const [selectedVariant, setSelectedVariant] = useState<number | null>(null);
+  const [variantLoadState, setVariantLoadState] = useState<Record<number, "loading" | "loaded" | "error">>({});
 
-  const totalSteps = 6;
+  const totalSteps = 7;
 
   // Restore last session from localStorage
   useEffect(() => {
@@ -331,9 +345,10 @@ export default function Home() {
         if (session.result) {
           setResult(session.result);
           loadGoogleFonts([session.result.fonts.heading, session.result.fonts.body]);
-          setStep(session.step ?? totalSteps);
+          const savedStep = session.step ?? totalSteps;
+          setStep(savedStep >= totalSteps ? totalSteps : savedStep);
         } else if (session.step) {
-          setStep(session.step);
+          setStep(Math.min(session.step, totalSteps));
         }
         if (session.logoUrl) setLogoUrl(session.logoUrl);
       }
@@ -374,14 +389,18 @@ export default function Home() {
   const buildLogoUrl = (brand: BrandResult, seed?: number) => {
     const s = seed ?? Math.floor(Math.random() * 1000000);
     const colorDesc = brand.colors.slice(0, 3).map(c => c.name).join(", ");
-    const prompt = `${brand.name} logo, ${inputs.industry} brand, ${brand.personality.join(", ")}, colors: ${colorDesc}, minimal logo, flat design, vector style, clean, professional, white background`;
+    const style = inputs.logoStyle || "geometric";
+    const prompt = `${style} minimal logo for ${brand.name} in ${inputs.industry}, flat design, vector style, clean, professional, white background, ${brand.personality.join(", ")}, ${colorDesc}`;
     return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&nologo=true&seed=${s}`;
   };
 
-  const setLogoFromBrand = (brand: BrandResult) => {
-    setLogoError(false);
-    setLogoLoading(true);
-    setLogoUrl(buildLogoUrl(brand));
+  const generateVariants = (brand: BrandResult) => {
+    const seeds = Array.from({ length: 4 }, () => Math.floor(Math.random() * 1000000));
+    const urls = seeds.map(s => buildLogoUrl(brand, s));
+    setLogoVariants(urls);
+    setSelectedVariant(null);
+    setLogoUrl(null);
+    setVariantLoadState({ 0: "loading", 1: "loading", 2: "loading", 3: "loading" });
   };
 
   const handleGenerate = () => {
@@ -391,7 +410,7 @@ export default function Home() {
       loadGoogleFonts([brand.fonts.heading, brand.fonts.body]);
       setResult(brand);
       saveBrand(brand);
-      setLogoFromBrand(brand);
+      generateVariants(brand);
       setGenerating(false);
       setStep(totalSteps);
     }, 1500);
@@ -404,16 +423,14 @@ export default function Home() {
       loadGoogleFonts([brand.fonts.heading, brand.fonts.body]);
       setResult(brand);
       saveBrand(brand);
-      setLogoFromBrand(brand);
+      generateVariants(brand);
       setGenerating(false);
     }, 800);
   };
 
-  const handleRegenerateLogo = () => {
+  const handleMoreLikeThis = () => {
     if (!result) return;
-    setLogoError(false);
-    setLogoLoading(true);
-    setLogoUrl(buildLogoUrl(result, Math.floor(Math.random() * 1000000)));
+    generateVariants(result);
   };
 
   const reset = () => {
@@ -421,6 +438,8 @@ export default function Home() {
     setResult(null);
     setLogoUrl(null);
     setLogoError(false);
+    setLogoVariants([]);
+    setSelectedVariant(null);
     setInputs({
       name: "",
       description: "",
@@ -428,6 +447,7 @@ export default function Home() {
       values: [],
       audiences: [],
       sliders: DEFAULT_SLIDERS.map(s => ({ ...s })),
+      logoStyle: "",
     });
     try { localStorage.removeItem("logotruffle_session"); } catch {}
   };
@@ -569,8 +589,47 @@ export default function Home() {
           </StepTransition>
         )}
 
-        {/* Step 5: Description + Generate */}
+        {/* Step 5: Logo Style */}
         {step === 5 && (
+          <StepTransition>
+            <div className="space-y-4">
+              <label className="block text-sm text-neutral-400">What style should your logo be?</label>
+              <div className="grid grid-cols-2 gap-3">
+                {LOGO_STYLES.map((style) => {
+                  const isSelected = inputs.logoStyle === style.id;
+                  return (
+                    <Card
+                      key={style.id}
+                      onClick={() => setInputs(prev => ({ ...prev, logoStyle: style.id }))}
+                      className={`cursor-pointer transition-all active:scale-95 select-none ${
+                        isSelected
+                          ? "border-purple-500 bg-purple-500/10 shadow-md shadow-purple-500/20"
+                          : "border-neutral-800 bg-neutral-900 hover:border-neutral-600"
+                      }`}
+                    >
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl mb-2">{style.icon}</div>
+                        <p className={`font-semibold text-sm ${isSelected ? "text-purple-300" : "text-neutral-200"}`}>{style.name}</p>
+                        <p className="text-xs text-neutral-500 mt-1">{style.desc}</p>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+              <Button
+                onClick={() => inputs.logoStyle && setStep(6)}
+                disabled={!inputs.logoStyle}
+                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 h-auto rounded-xl disabled:opacity-20 hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-purple-500/20 border-0"
+              >
+                Next →
+              </Button>
+              <Button variant="ghost" onClick={() => setStep(4)} className="text-sm text-neutral-500 hover:text-neutral-300 px-2 -ml-2">← Back</Button>
+            </div>
+          </StepTransition>
+        )}
+
+        {/* Step 6: Description + Generate */}
+        {step === 6 && (
           <StepTransition>
             <div className="space-y-4">
               <label className="block text-sm text-neutral-400">Describe your brand in a sentence <span className="text-neutral-600">(optional)</span></label>
@@ -601,7 +660,7 @@ export default function Home() {
               >
                 {generating ? "🍄‍🟫 Hunting for truffles..." : "Generate Brand 🍄‍🟫"}
               </Button>
-              <Button variant="ghost" onClick={() => setStep(4)} className="text-sm text-neutral-500 hover:text-neutral-300 px-2 -ml-2">← Back</Button>
+              <Button variant="ghost" onClick={() => setStep(5)} className="text-sm text-neutral-500 hover:text-neutral-300 px-2 -ml-2">← Back</Button>
             </div>
           </StepTransition>
         )}
@@ -610,33 +669,54 @@ export default function Home() {
         {step === totalSteps && result && (
           <StepTransition>
             <div className="space-y-6 w-full">
-              {/* AI Generated Logo */}
-              {logoUrl && !logoError && (
+              {/* AI Generated Logo Variants */}
+              {logoVariants.length > 0 && (
                 <Card className="bg-neutral-900/50 border-neutral-800 text-center">
                   <CardContent className="p-4 sm:p-6">
-                    <p className="text-xs text-neutral-500 uppercase tracking-wider mb-3">AI Generated Logo (Preview)</p>
-                    <div className="relative mx-auto w-48 h-48 sm:w-64 sm:h-64 rounded-xl overflow-hidden bg-neutral-800">
-                      {logoLoading && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-neutral-800 z-10">
-                          <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-                        </div>
-                      )}
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={logoUrl}
-                        alt={`${result.name} AI logo`}
-                        className="w-full h-full object-contain"
-                        onLoad={() => setLogoLoading(false)}
-                        onError={() => { setLogoLoading(false); setLogoError(true); }}
-                      />
+                    <p className="text-xs text-neutral-500 uppercase tracking-wider mb-3">Choose Your Logo</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {logoVariants.map((url, i) => {
+                        if (variantLoadState[i] === "error") return null;
+                        const isSelected = selectedVariant === i;
+                        return (
+                          <div
+                            key={i}
+                            onClick={() => { setSelectedVariant(i); setLogoUrl(url); }}
+                            className={`relative rounded-xl overflow-hidden bg-neutral-800 cursor-pointer transition-all ${
+                              isSelected ? "ring-2 ring-purple-500 shadow-lg shadow-purple-500/30 scale-[1.02]" : "hover:ring-1 hover:ring-neutral-600"
+                            }`}
+                          >
+                            {variantLoadState[i] === "loading" && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-neutral-800 z-10">
+                                <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                              </div>
+                            )}
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={url}
+                              alt={`${result.name} logo variant ${i + 1}`}
+                              className="w-full aspect-square object-contain"
+                              onLoad={() => setVariantLoadState(prev => ({ ...prev, [i]: "loaded" }))}
+                              onError={() => setVariantLoadState(prev => ({ ...prev, [i]: "error" }))}
+                            />
+                            {isSelected && (
+                              <div className="absolute top-2 right-2 bg-purple-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                ✓ Selected
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                    <Button
-                      onClick={handleRegenerateLogo}
-                      variant="ghost"
-                      className="mt-3 text-sm text-neutral-400 hover:text-white"
-                    >
-                      🎲 Regenerate Logo
-                    </Button>
+                    {selectedVariant !== null && (
+                      <Button
+                        onClick={handleMoreLikeThis}
+                        variant="ghost"
+                        className="mt-3 text-sm text-neutral-400 hover:text-white"
+                      >
+                        🎲 More Like This
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               )}
