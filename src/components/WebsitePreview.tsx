@@ -1,6 +1,52 @@
 "use client";
 
 import { useMemo } from "react";
+import {
+  Lightning,
+  LockKey,
+  Link as LinkIcon,
+  Leaf,
+  CookingPot,
+  Rocket,
+  Target,
+  FirstAidKit,
+  YinYang,
+  Sparkle,
+  Globe,
+  Ruler,
+  ChartBar,
+  Shield,
+  Diamond,
+  GraduationCap,
+  DeviceMobile,
+  Trophy,
+  Star,
+  Heart,
+} from "@phosphor-icons/react";
+import type { ComponentType } from "react";
+
+const iconMap: Record<string, ComponentType<{ size?: number; color?: string; weight?: "thin" | "light" | "regular" | "bold" | "fill" | "duotone" }>> = {
+  lightning: Lightning,
+  lock: LockKey,
+  link: LinkIcon,
+  leaf: Leaf,
+  chef: CookingPot,
+  rocket: Rocket,
+  target: Target,
+  medical: FirstAidKit,
+  zen: YinYang,
+  sparkle: Sparkle,
+  globe: Globe,
+  ruler: Ruler,
+  chart: ChartBar,
+  shield: Shield,
+  diamond: Diamond,
+  graduation: GraduationCap,
+  mobile: DeviceMobile,
+  trophy: Trophy,
+  star: Star,
+  heart: Heart,
+};
 
 interface BrandResult {
   name: string;
@@ -32,9 +78,9 @@ function getIndustryContent(industry: string, brandName: string) {
       hero: "Build the future with cutting-edge solutions that scale with your ambition.",
       cta: "Get Started Free",
       features: [
-        { title: "Lightning Fast", desc: "Optimized performance that keeps you ahead of the competition.", icon: "⚡" },
-        { title: "Secure by Design", desc: "Enterprise-grade security built into every layer of the stack.", icon: "🔒" },
-        { title: "Seamless Integration", desc: "Connect with the tools you already love in minutes.", icon: "🔗" },
+        { title: "Lightning Fast", desc: "Optimized performance that keeps you ahead of the competition.", icon: "lightning" },
+        { title: "Secure by Design", desc: "Enterprise-grade security built into every layer of the stack.", icon: "lock" },
+        { title: "Seamless Integration", desc: "Connect with the tools you already love in minutes.", icon: "link" },
       ],
       testimonial: `${brandName} transformed how our team ships products. We're 3x faster and haven't looked back.`,
       author: "Sarah Chen, CTO at Meridian Labs",
@@ -43,9 +89,9 @@ function getIndustryContent(industry: string, brandName: string) {
       hero: "Crafted with passion, served with love. Taste the difference quality makes.",
       cta: "View Our Menu",
       features: [
-        { title: "Fresh Ingredients", desc: "Sourced daily from local farms and trusted producers.", icon: "🌿" },
-        { title: "Handcrafted", desc: "Every item made with care by our expert team.", icon: "👨‍🍳" },
-        { title: "Fast Delivery", desc: "From our kitchen to your door in 30 minutes or less.", icon: "🚀" },
+        { title: "Fresh Ingredients", desc: "Sourced daily from local farms and trusted producers.", icon: "leaf" },
+        { title: "Handcrafted", desc: "Every item made with care by our expert team.", icon: "chef" },
+        { title: "Fast Delivery", desc: "From our kitchen to your door in 30 minutes or less.", icon: "rocket" },
       ],
       testimonial: `Best discovery of the year. ${brandName} has become our go-to for every occasion.`,
       author: "Marcus Rivera, Food Enthusiast",
@@ -54,9 +100,9 @@ function getIndustryContent(industry: string, brandName: string) {
       hero: "Your journey to a healthier, happier you starts right here.",
       cta: "Start Your Journey",
       features: [
-        { title: "Personalized Plans", desc: "Programs tailored to your unique body and goals.", icon: "🎯" },
-        { title: "Expert Guidance", desc: "Certified professionals supporting you every step.", icon: "🧑‍⚕️" },
-        { title: "Holistic Approach", desc: "Mind, body, and spirit — we care for the whole you.", icon: "🧘" },
+        { title: "Personalized Plans", desc: "Programs tailored to your unique body and goals.", icon: "target" },
+        { title: "Expert Guidance", desc: "Certified professionals supporting you every step.", icon: "medical" },
+        { title: "Holistic Approach", desc: "Mind, body, and spirit — we care for the whole you.", icon: "zen" },
       ],
       testimonial: `${brandName} helped me completely transform my lifestyle. I feel incredible.`,
       author: "Jamie Torres, Wellness Advocate",
@@ -65,9 +111,9 @@ function getIndustryContent(industry: string, brandName: string) {
       hero: "Express yourself. Discover styles that tell your unique story.",
       cta: "Shop the Collection",
       features: [
-        { title: "Curated Styles", desc: "Handpicked pieces that define modern elegance.", icon: "✨" },
-        { title: "Sustainable Fashion", desc: "Ethically made with materials that respect our planet.", icon: "🌍" },
-        { title: "Perfect Fit", desc: "Inclusive sizing and tailored options for every body.", icon: "📐" },
+        { title: "Curated Styles", desc: "Handpicked pieces that define modern elegance.", icon: "sparkle" },
+        { title: "Sustainable Fashion", desc: "Ethically made with materials that respect our planet.", icon: "globe" },
+        { title: "Perfect Fit", desc: "Inclusive sizing and tailored options for every body.", icon: "ruler" },
       ],
       testimonial: `${brandName} gets it. Quality, style, and sustainability without compromise.`,
       author: "Alex Kim, Style Editor",
@@ -76,9 +122,9 @@ function getIndustryContent(industry: string, brandName: string) {
       hero: "Smart money management for a brighter financial future.",
       cta: "Open Your Account",
       features: [
-        { title: "Smart Analytics", desc: "AI-powered insights that help you make better decisions.", icon: "📊" },
-        { title: "Bank-Level Security", desc: "Your money protected by industry-leading encryption.", icon: "🛡️" },
-        { title: "Zero Hidden Fees", desc: "Transparent pricing — what you see is what you get.", icon: "💎" },
+        { title: "Smart Analytics", desc: "AI-powered insights that help you make better decisions.", icon: "chart" },
+        { title: "Bank-Level Security", desc: "Your money protected by industry-leading encryption.", icon: "shield" },
+        { title: "Zero Hidden Fees", desc: "Transparent pricing — what you see is what you get.", icon: "diamond" },
       ],
       testimonial: `${brandName} made finance approachable. My savings have grown 40% this year.`,
       author: "David Park, Small Business Owner",
@@ -87,9 +133,9 @@ function getIndustryContent(industry: string, brandName: string) {
       hero: "Learn without limits. World-class education, accessible to everyone.",
       cta: "Explore Courses",
       features: [
-        { title: "Expert Instructors", desc: "Learn from industry leaders and top academics.", icon: "🎓" },
-        { title: "Learn Your Way", desc: "Self-paced content you can access anytime, anywhere.", icon: "📱" },
-        { title: "Certified Skills", desc: "Earn credentials that employers actually value.", icon: "🏆" },
+        { title: "Expert Instructors", desc: "Learn from industry leaders and top academics.", icon: "graduation" },
+        { title: "Learn Your Way", desc: "Self-paced content you can access anytime, anywhere.", icon: "mobile" },
+        { title: "Certified Skills", desc: "Earn credentials that employers actually value.", icon: "trophy" },
       ],
       testimonial: `${brandName} helped me land my dream job. The courses are genuinely world-class.`,
       author: "Priya Sharma, Software Engineer",
@@ -100,9 +146,9 @@ function getIndustryContent(industry: string, brandName: string) {
     hero: `Experience the difference that ${brandName} brings. We're redefining what's possible.`,
     cta: "Get Started",
     features: [
-      { title: "Quality First", desc: "Every detail crafted with precision and care.", icon: "⭐" },
-      { title: "Always Evolving", desc: "We innovate constantly to serve you better.", icon: "🚀" },
-      { title: "Human-Centered", desc: "Built around your needs, not the other way around.", icon: "❤️" },
+      { title: "Quality First", desc: "Every detail crafted with precision and care.", icon: "star" },
+      { title: "Always Evolving", desc: "We innovate constantly to serve you better.", icon: "rocket" },
+      { title: "Human-Centered", desc: "Built around your needs, not the other way around.", icon: "heart" },
     ],
     testimonial: `Working with ${brandName} has been a game-changer. Couldn't recommend them more highly.`,
     author: "Jordan Blake, Happy Customer",
@@ -230,7 +276,9 @@ export default function WebsitePreview({ brand, industry, onClose }: WebsitePrev
                   border: `1px solid ${bgAltIsDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`,
                 }}
               >
-                <div className="text-3xl mb-4">{f.icon}</div>
+                <div className="mb-4">
+                  {(() => { const Icon = iconMap[f.icon]; return Icon ? <Icon size={36} weight="duotone" color={palette.primary} /> : null; })()}
+                </div>
                 <h3 className="text-lg font-bold mb-2" style={{ fontFamily: headingFont, color: textOnBgAlt }}>
                   {f.title}
                 </h3>
