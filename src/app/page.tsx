@@ -118,6 +118,19 @@ const FONT_PAIRS = [
 
 const ICONS = ["◆", "✦", "⬡", "◎", "△", "⬢", "◈", "▲", "●", "✧", "⟁", "⊕", "◉", "⬣", "∞", "⊙"];
 
+function loadGoogleFonts(fonts: string[]) {
+  const unique = [...new Set(fonts)];
+  unique.forEach((font) => {
+    const id = `gfont-${font.replace(/\s+/g, "-")}`;
+    if (document.getElementById(id)) return;
+    const link = document.createElement("link");
+    link.id = id;
+    link.rel = "stylesheet";
+    link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(font)}:wght@400;700&display=swap`;
+    document.head.appendChild(link);
+  });
+}
+
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -328,6 +341,7 @@ export default function Home() {
     setGenerating(true);
     setTimeout(() => {
       const brand = generateBrand(inputs);
+      loadGoogleFonts([brand.fonts.heading, brand.fonts.body]);
       setResult(brand);
       saveBrand(brand);
       setGenerating(false);
@@ -339,6 +353,7 @@ export default function Home() {
     setGenerating(true);
     setTimeout(() => {
       const brand = generateBrand(inputs);
+      loadGoogleFonts([brand.fonts.heading, brand.fonts.body]);
       setResult(brand);
       saveBrand(brand);
       setGenerating(false);
