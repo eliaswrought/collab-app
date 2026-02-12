@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import WebsitePreview from "@/components/WebsitePreview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -313,6 +314,7 @@ export default function Home() {
   const [result, setResult] = useState<BrandResult | null>(null);
   const [generating, setGenerating] = useState(false);
   const [restored, setRestored] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const totalSteps = 6;
 
@@ -664,6 +666,14 @@ export default function Home() {
                 </Card>
               </div>
 
+              {/* Preview Website */}
+              <Button
+                onClick={() => setShowPreview(true)}
+                className="w-full bg-gradient-to-r from-indigo-500 to-cyan-500 text-white font-semibold py-3 h-auto rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-indigo-500/20 border-0"
+              >
+                🌐 Preview as Website
+              </Button>
+
               {/* Actions */}
               <div className="flex gap-3 pt-2 pb-8">
                 <Button
@@ -685,6 +695,15 @@ export default function Home() {
           </StepTransition>
         )}
       </div>
+
+      {/* Website Preview Overlay */}
+      {showPreview && result && (
+        <WebsitePreview
+          brand={result}
+          industry={inputs.industry}
+          onClose={() => setShowPreview(false)}
+        />
+      )}
     </main>
   );
 }
