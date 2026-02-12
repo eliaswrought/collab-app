@@ -1,6 +1,12 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
 
 /* ───────── Types ───────── */
 interface SliderValue {
@@ -48,7 +54,6 @@ const AUDIENCES = [
   "Gen Z", "Millennials", "Professionals", "Creatives", "Executives", "Everyone"
 ];
 
-// GV Brand Sprint personality sliders
 const DEFAULT_SLIDERS: SliderValue[] = [
   { label: ["Friend", "Authority"], value: 50 },
   { label: ["Young & Innovative", "Mature & Classic"], value: 50 },
@@ -59,12 +64,6 @@ const DEFAULT_SLIDERS: SliderValue[] = [
 ];
 
 /* ───────── Brand Generation Logic ───────── */
-
-function sliderToWeight(value: number): "low" | "mid" | "high" {
-  if (value < 35) return "low";
-  if (value > 65) return "high";
-  return "mid";
-}
 
 const COLOR_POOLS: Record<string, { name: string; hex: string }[]> = {
   warmBold: [
@@ -137,7 +136,6 @@ function generateBrand(inputs: BrandInputs): BrandResult {
   const casualFormal = s[4].value;
   const loudQuiet = s[5].value;
 
-  // Determine color pool based on slider positions
   let colorPool: { name: string; hex: string }[];
   if (massElite > 65 && casualFormal > 60) {
     colorPool = COLOR_POOLS.premiumDark;
@@ -158,7 +156,6 @@ function generateBrand(inputs: BrandInputs): BrandResult {
   
   const colors = pickN(colorPool, 5);
 
-  // Font selection based on personality
   let fontVibe: string;
   if (massElite > 65) fontVibe = "premium";
   else if (playfulSerious < 35) fontVibe = "playful";
@@ -171,7 +168,6 @@ function generateBrand(inputs: BrandInputs): BrandResult {
   const matchingFonts = FONT_PAIRS.filter(f => f.vibe === fontVibe);
   const fonts = matchingFonts.length > 0 ? pick(matchingFonts) : pick(FONT_PAIRS);
 
-  // Generate personality traits from sliders + values
   const traits: string[] = [];
   if (friendAuth < 40) traits.push("Approachable");
   if (friendAuth > 60) traits.push("Authoritative");
@@ -184,11 +180,9 @@ function generateBrand(inputs: BrandInputs): BrandResult {
   if (loudQuiet < 40) traits.push("Bold");
   if (loudQuiet > 60) traits.push("Refined");
   
-  // Add from selected values
   traits.push(...inputs.values.slice(0, 4 - Math.min(traits.length, 2)));
   const personality = traits.slice(0, 5);
 
-  // Tagline generation based on values and personality
   const taglineTemplates = [
     `${inputs.values[0] || "Quality"} meets design.`,
     `Brand identity, ${personality[0]?.toLowerCase() || "redefined"}.`,
@@ -224,21 +218,20 @@ function saveBrand(brand: BrandResult) {
 
 /* ───────── Components ───────── */
 
-function Slider({ slider, onChange }: { slider: SliderValue; onChange: (v: number) => void }) {
+function PersonalitySlider({ slider, onChange }: { slider: SliderValue; onChange: (v: number) => void }) {
   return (
     <div className="mb-6">
       <div className="flex justify-between text-xs sm:text-sm text-neutral-400 mb-2">
         <span>{slider.label[0]}</span>
         <span>{slider.label[1]}</span>
       </div>
-      <input
-        type="range"
+      <Slider
         min={0}
         max={100}
-        value={slider.value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full h-3 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-purple-500 touch-pan-y"
-        style={{ WebkitAppearance: "none", padding: "8px 0" }}
+        step={1}
+        value={[slider.value]}
+        onValueChange={(vals) => onChange(vals[0])}
+        className="w-full [&_[data-slot=slider-track]]:h-3 [&_[data-slot=slider-track]]:bg-neutral-800 [&_[data-slot=slider-range]]:bg-gradient-to-r [&_[data-slot=slider-range]]:from-purple-500 [&_[data-slot=slider-range]]:to-pink-500 [&_[data-slot=slider-thumb]]:size-6 [&_[data-slot=slider-thumb]]:border-2 [&_[data-slot=slider-thumb]]:border-neutral-900 [&_[data-slot=slider-thumb]]:bg-gradient-to-br [&_[data-slot=slider-thumb]]:from-purple-400 [&_[data-slot=slider-thumb]]:to-pink-500 [&_[data-slot=slider-thumb]]:shadow-lg [&_[data-slot=slider-thumb]]:shadow-purple-500/30"
       />
     </div>
   );
@@ -255,23 +248,39 @@ function ChipSelector({ options, selected, onToggle, max }: {
       {options.map((opt) => {
         const isSelected = selected.includes(opt);
         const isDisabled = !isSelected && selected.length >= max;
-        return (
-          <button
+        return isSelected ? (
+          <Badge
             key={opt}
+            variant="outline"
+            onClick={() => onToggle(opt)}
+            className="px-4 py-3 text-sm cursor-pointer border-purple-500 bg-purple-500/20 text-purple-300 shadow-sm shadow-purple-500/20 hover:bg-purple-500/30 active:scale-95 transition-all select-none"
+          >
+            {opt}
+          </Badge>
+        ) : (
+          <Badge
+            key={opt}
+            variant="outline"
             onClick={() => !isDisabled && onToggle(opt)}
-            disabled={isDisabled}
-            className={`px-4 py-3 rounded-xl text-sm border transition-all active:scale-95 select-none ${
-              isSelected
-                ? "border-purple-500 bg-purple-500/20 text-purple-300 shadow-sm shadow-purple-500/20"
-                : isDisabled
+            className={`px-4 py-3 text-sm cursor-pointer transition-all active:scale-95 select-none ${
+              isDisabled
                 ? "border-neutral-800 bg-neutral-900/50 text-neutral-600 cursor-not-allowed"
                 : "border-neutral-800 bg-neutral-900 text-neutral-300 hover:border-neutral-600 active:bg-neutral-800"
             }`}
           >
             {opt}
-          </button>
+          </Badge>
         );
       })}
+    </div>
+  );
+}
+
+/* ───────── Transition wrapper ───────── */
+function StepTransition({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+      {children}
     </div>
   );
 }
@@ -380,228 +389,256 @@ export default function Home() {
       <div className="w-full max-w-lg">
         {/* Step 0: Brand Name */}
         {step === 0 && (
-          <div className="space-y-4">
-            <label className="block text-sm text-neutral-400">What&apos;s your brand name?</label>
-            <input
-              type="text"
-              value={inputs.name}
-              onChange={(e) => setInputs(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="e.g. Luminary"
-              className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-lg focus:outline-none focus:border-purple-500 transition-colors"
-              autoFocus
-            />
-            <button
-              onClick={() => inputs.name.trim() && setStep(1)}
-              disabled={!inputs.name.trim()}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl disabled:opacity-20 disabled:cursor-not-allowed sm:hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer shadow-md shadow-purple-500/20"
-            >
-              Next →
-            </button>
-          </div>
+          <StepTransition>
+            <div className="space-y-4">
+              <label className="block text-sm text-neutral-400">What&apos;s your brand name?</label>
+              <Input
+                type="text"
+                value={inputs.name}
+                onChange={(e) => setInputs(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g. Luminary"
+                className="w-full bg-neutral-900 border-neutral-800 rounded-xl px-4 py-3 text-lg h-auto focus:border-purple-500 transition-colors"
+                autoFocus
+              />
+              <Button
+                onClick={() => inputs.name.trim() && setStep(1)}
+                disabled={!inputs.name.trim()}
+                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 h-auto rounded-xl disabled:opacity-20 hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-purple-500/20 border-0"
+              >
+                Next →
+              </Button>
+            </div>
+          </StepTransition>
         )}
 
         {/* Step 1: Industry */}
         {step === 1 && (
-          <div className="space-y-4">
-            <label className="block text-sm text-neutral-400">What industry are you in?</label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {INDUSTRIES.map((ind) => (
-                <button
-                  key={ind}
-                  onClick={() => { setInputs(prev => ({ ...prev, industry: ind })); setStep(2); }}
-                  className="px-4 py-4 rounded-xl text-sm border border-neutral-800 bg-neutral-900 text-neutral-300 hover:border-neutral-600 active:bg-neutral-800 active:scale-95 transition-all select-none"
-                >
-                  {ind}
-                </button>
-              ))}
+          <StepTransition>
+            <div className="space-y-4">
+              <label className="block text-sm text-neutral-400">What industry are you in?</label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {INDUSTRIES.map((ind) => (
+                  <Button
+                    key={ind}
+                    variant="outline"
+                    onClick={() => { setInputs(prev => ({ ...prev, industry: ind })); setStep(2); }}
+                    className="px-4 py-4 h-auto rounded-xl text-sm border-neutral-800 bg-neutral-900 text-neutral-300 hover:border-neutral-600 hover:bg-neutral-800 active:scale-95 transition-all select-none"
+                  >
+                    {ind}
+                  </Button>
+                ))}
+              </div>
+              <Button variant="ghost" onClick={() => setStep(0)} className="text-sm text-neutral-500 hover:text-neutral-300 px-2 -ml-2">← Back</Button>
             </div>
-            <button onClick={() => setStep(0)} className="text-sm text-neutral-500 hover:text-neutral-300 py-3 px-2 -ml-2 active:text-neutral-100 select-none">← Back</button>
-          </div>
+          </StepTransition>
         )}
 
-        {/* Step 2: Core Values (pick up to 3) */}
+        {/* Step 2: Core Values */}
         {step === 2 && (
-          <div className="space-y-4">
-            <label className="block text-sm text-neutral-400">
-              What are your brand&apos;s core values? <span className="text-neutral-600">(pick up to 3)</span>
-            </label>
-            <ChipSelector options={CORE_VALUES} selected={inputs.values} onToggle={toggleValue} max={3} />
-            <button
-              onClick={() => inputs.values.length > 0 && setStep(3)}
-              disabled={inputs.values.length === 0}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl disabled:opacity-20 disabled:cursor-not-allowed sm:hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer shadow-md shadow-purple-500/20"
-            >
-              Next →
-            </button>
-            <button onClick={() => setStep(1)} className="text-sm text-neutral-500 hover:text-neutral-300 py-3 px-2 -ml-2 active:text-neutral-100 select-none">← Back</button>
-          </div>
+          <StepTransition>
+            <div className="space-y-4">
+              <label className="block text-sm text-neutral-400">
+                What are your brand&apos;s core values? <span className="text-neutral-600">(pick up to 3)</span>
+              </label>
+              <ChipSelector options={CORE_VALUES} selected={inputs.values} onToggle={toggleValue} max={3} />
+              <Button
+                onClick={() => inputs.values.length > 0 && setStep(3)}
+                disabled={inputs.values.length === 0}
+                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 h-auto rounded-xl disabled:opacity-20 hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-purple-500/20 border-0"
+              >
+                Next →
+              </Button>
+              <Button variant="ghost" onClick={() => setStep(1)} className="text-sm text-neutral-500 hover:text-neutral-300 px-2 -ml-2">← Back</Button>
+            </div>
+          </StepTransition>
         )}
 
-        {/* Step 3: Target Audience (pick up to 3) */}
+        {/* Step 3: Target Audience */}
         {step === 3 && (
-          <div className="space-y-4">
-            <label className="block text-sm text-neutral-400">
-              Who&apos;s your target audience? <span className="text-neutral-600">(pick up to 3)</span>
-            </label>
-            <ChipSelector options={AUDIENCES} selected={inputs.audiences} onToggle={toggleAudience} max={3} />
-            <button
-              onClick={() => inputs.audiences.length > 0 && setStep(4)}
-              disabled={inputs.audiences.length === 0}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl disabled:opacity-20 disabled:cursor-not-allowed sm:hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer shadow-md shadow-purple-500/20"
-            >
-              Next →
-            </button>
-            <button onClick={() => setStep(2)} className="text-sm text-neutral-500 hover:text-neutral-300 py-3 px-2 -ml-2 active:text-neutral-100 select-none">← Back</button>
-          </div>
+          <StepTransition>
+            <div className="space-y-4">
+              <label className="block text-sm text-neutral-400">
+                Who&apos;s your target audience? <span className="text-neutral-600">(pick up to 3)</span>
+              </label>
+              <ChipSelector options={AUDIENCES} selected={inputs.audiences} onToggle={toggleAudience} max={3} />
+              <Button
+                onClick={() => inputs.audiences.length > 0 && setStep(4)}
+                disabled={inputs.audiences.length === 0}
+                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 h-auto rounded-xl disabled:opacity-20 hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-purple-500/20 border-0"
+              >
+                Next →
+              </Button>
+              <Button variant="ghost" onClick={() => setStep(2)} className="text-sm text-neutral-500 hover:text-neutral-300 px-2 -ml-2">← Back</Button>
+            </div>
+          </StepTransition>
         )}
 
-        {/* Step 4: Personality Sliders (GV Brand Sprint) */}
+        {/* Step 4: Personality Sliders */}
         {step === 4 && (
-          <div className="space-y-4">
-            <label className="block text-sm text-neutral-400 mb-2">
-              Position your brand personality
-            </label>
-            <p className="text-xs text-neutral-600 mb-4">Drag each slider to where your brand sits on the spectrum</p>
-            {inputs.sliders.map((slider, i) => (
-              <Slider key={i} slider={slider} onChange={(v) => updateSlider(i, v)} />
-            ))}
-            <button
-              onClick={() => setStep(5)}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl sm:hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer shadow-md shadow-purple-500/20"
-            >
-              Next →
-            </button>
-            <button onClick={() => setStep(3)} className="text-sm text-neutral-500 hover:text-neutral-300 py-3 px-2 -ml-2 active:text-neutral-100 select-none">← Back</button>
-          </div>
+          <StepTransition>
+            <div className="space-y-4">
+              <label className="block text-sm text-neutral-400 mb-2">
+                Position your brand personality
+              </label>
+              <p className="text-xs text-neutral-600 mb-4">Drag each slider to where your brand sits on the spectrum</p>
+              {inputs.sliders.map((slider, i) => (
+                <PersonalitySlider key={i} slider={slider} onChange={(v) => updateSlider(i, v)} />
+              ))}
+              <Button
+                onClick={() => setStep(5)}
+                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 h-auto rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-purple-500/20 border-0"
+              >
+                Next →
+              </Button>
+              <Button variant="ghost" onClick={() => setStep(3)} className="text-sm text-neutral-500 hover:text-neutral-300 px-2 -ml-2">← Back</Button>
+            </div>
+          </StepTransition>
         )}
 
         {/* Step 5: Description + Generate */}
         {step === 5 && (
-          <div className="space-y-4">
-            <label className="block text-sm text-neutral-400">Describe your brand in a sentence <span className="text-neutral-600">(optional)</span></label>
-            <textarea
-              value={inputs.description}
-              onChange={(e) => setInputs(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="e.g. A premium coffee subscription for remote workers who care about sustainability..."
-              className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-base focus:outline-none focus:border-purple-500 transition-colors resize-none h-24"
-            />
+          <StepTransition>
+            <div className="space-y-4">
+              <label className="block text-sm text-neutral-400">Describe your brand in a sentence <span className="text-neutral-600">(optional)</span></label>
+              <Textarea
+                value={inputs.description}
+                onChange={(e) => setInputs(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="e.g. A premium coffee subscription for remote workers who care about sustainability..."
+                className="w-full bg-neutral-900 border-neutral-800 rounded-xl px-4 py-3 text-base focus:border-purple-500 transition-colors resize-none h-24"
+              />
 
-            {/* Summary */}
-            <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-4 text-sm space-y-2">
-              <p className="text-neutral-400">Summary</p>
-              <p><span className="text-neutral-500">Name:</span> <span className="text-white">{inputs.name}</span></p>
-              <p><span className="text-neutral-500">Industry:</span> <span className="text-white">{inputs.industry}</span></p>
-              <p><span className="text-neutral-500">Values:</span> <span className="text-white">{inputs.values.join(", ")}</span></p>
-              <p><span className="text-neutral-500">Audience:</span> <span className="text-white">{inputs.audiences.join(", ")}</span></p>
+              {/* Summary */}
+              <Card className="bg-neutral-900/50 border-neutral-800">
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <CardTitle className="text-sm text-neutral-400 font-normal">Summary</CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 pb-4 text-sm space-y-2">
+                  <p><span className="text-neutral-500">Name:</span> <span className="text-white">{inputs.name}</span></p>
+                  <p><span className="text-neutral-500">Industry:</span> <span className="text-white">{inputs.industry}</span></p>
+                  <p><span className="text-neutral-500">Values:</span> <span className="text-white">{inputs.values.join(", ")}</span></p>
+                  <p><span className="text-neutral-500">Audience:</span> <span className="text-white">{inputs.audiences.join(", ")}</span></p>
+                </CardContent>
+              </Card>
+
+              <Button
+                onClick={handleGenerate}
+                disabled={generating}
+                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 h-auto rounded-xl disabled:opacity-20 hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-purple-500/20 border-0"
+              >
+                {generating ? "🍫 Hunting for truffles..." : "Generate Brand 🍫"}
+              </Button>
+              <Button variant="ghost" onClick={() => setStep(4)} className="text-sm text-neutral-500 hover:text-neutral-300 px-2 -ml-2">← Back</Button>
             </div>
-
-            <button
-              onClick={handleGenerate}
-              disabled={generating}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl disabled:opacity-20 disabled:cursor-not-allowed sm:hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer shadow-md shadow-purple-500/20"
-            >
-              {generating ? "🍫 Hunting for truffles..." : "Generate Brand 🍫"}
-            </button>
-            <button onClick={() => setStep(4)} className="text-sm text-neutral-500 hover:text-neutral-300 py-3 px-2 -ml-2 active:text-neutral-100 select-none">← Back</button>
-          </div>
+          </StepTransition>
         )}
 
         {/* Results */}
         {step === totalSteps && result && (
-          <div className="space-y-6 w-full">
-            {/* Logo Preview */}
-            <div className="text-center p-6 sm:p-8 rounded-2xl border border-neutral-800 bg-neutral-900/50">
-              <div className="text-4xl sm:text-5xl mb-2">{result.logoIcon}</div>
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-widest" style={{ fontFamily: result.fonts.heading }}>
-                {result.logoText}
-              </h2>
-              <p className="text-neutral-400 mt-2 italic" style={{ fontFamily: result.fonts.body }}>
-                {result.tagline}
-              </p>
-            </div>
+          <StepTransition>
+            <div className="space-y-6 w-full">
+              {/* Logo Preview */}
+              <Card className="bg-neutral-900/50 border-neutral-800 text-center">
+                <CardContent className="p-6 sm:p-8">
+                  <div className="text-4xl sm:text-5xl mb-2">{result.logoIcon}</div>
+                  <h2 className="text-2xl sm:text-3xl font-bold tracking-widest" style={{ fontFamily: result.fonts.heading }}>
+                    {result.logoText}
+                  </h2>
+                  <p className="text-neutral-400 mt-2 italic" style={{ fontFamily: result.fonts.body }}>
+                    {result.tagline}
+                  </p>
+                </CardContent>
+              </Card>
 
-            {/* Colors */}
-            <div>
-              <h3 className="text-sm text-neutral-400 mb-3 uppercase tracking-wider">Color Palette</h3>
-              <div className="flex gap-1.5 sm:gap-2 rounded-xl overflow-hidden">
-                {result.colors.map((c) => (
-                  <div key={c.hex} className="flex-1 group cursor-pointer" onClick={() => navigator.clipboard.writeText(c.hex)}>
-                    <div className="h-16 sm:h-20 transition-transform group-hover:scale-105" style={{ backgroundColor: c.hex }} />
-                    <div className="bg-neutral-900 px-1 sm:px-2 py-1.5 sm:py-2 text-center">
-                      <p className="text-[10px] sm:text-xs text-neutral-300 truncate">{c.name}</p>
-                      <p className="text-[10px] sm:text-xs text-neutral-500 font-mono">{c.hex}</p>
+              {/* Colors */}
+              <div>
+                <h3 className="text-sm text-neutral-400 mb-3 uppercase tracking-wider">Color Palette</h3>
+                <div className="flex gap-1.5 sm:gap-2 rounded-xl overflow-hidden">
+                  {result.colors.map((c) => (
+                    <div key={c.hex} className="flex-1 group cursor-pointer" onClick={() => navigator.clipboard.writeText(c.hex)}>
+                      <div className="h-16 sm:h-20 transition-transform group-hover:scale-105" style={{ backgroundColor: c.hex }} />
+                      <div className="bg-neutral-900 px-1 sm:px-2 py-1.5 sm:py-2 text-center">
+                        <p className="text-[10px] sm:text-xs text-neutral-300 truncate">{c.name}</p>
+                        <p className="text-[10px] sm:text-xs text-neutral-500 font-mono">{c.hex}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-neutral-600 mt-1">Tap a color to copy hex</p>
-            </div>
-
-            {/* Typography */}
-            <div>
-              <h3 className="text-sm text-neutral-400 mb-3 uppercase tracking-wider">Typography</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-neutral-900 rounded-xl p-4 border border-neutral-800">
-                  <p className="text-xs text-neutral-500 mb-1">Heading</p>
-                  <p className="text-xl sm:text-2xl font-bold" style={{ fontFamily: result.fonts.heading }}>{result.fonts.heading}</p>
+                  ))}
                 </div>
-                <div className="bg-neutral-900 rounded-xl p-4 border border-neutral-800">
-                  <p className="text-xs text-neutral-500 mb-1">Body</p>
-                  <p className="text-base sm:text-lg" style={{ fontFamily: result.fonts.body }}>{result.fonts.body}</p>
+                <p className="text-xs text-neutral-600 mt-1">Tap a color to copy hex</p>
+              </div>
+
+              {/* Typography */}
+              <div>
+                <h3 className="text-sm text-neutral-400 mb-3 uppercase tracking-wider">Typography</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <Card className="bg-neutral-900 border-neutral-800">
+                    <CardContent className="p-4">
+                      <p className="text-xs text-neutral-500 mb-1">Heading</p>
+                      <p className="text-xl sm:text-2xl font-bold" style={{ fontFamily: result.fonts.heading }}>{result.fonts.heading}</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-neutral-900 border-neutral-800">
+                    <CardContent className="p-4">
+                      <p className="text-xs text-neutral-500 mb-1">Body</p>
+                      <p className="text-base sm:text-lg" style={{ fontFamily: result.fonts.body }}>{result.fonts.body}</p>
+                    </CardContent>
+                  </Card>
                 </div>
               </div>
-            </div>
 
-            {/* Personality */}
-            <div>
-              <h3 className="text-sm text-neutral-400 mb-3 uppercase tracking-wider">Brand Personality</h3>
-              <div className="flex gap-2 flex-wrap">
-                {result.personality.map((trait) => (
-                  <span key={trait} className="px-3 py-1.5 bg-neutral-900 border border-neutral-800 rounded-full text-sm text-neutral-300">
-                    {trait}
-                  </span>
-                ))}
+              {/* Personality */}
+              <div>
+                <h3 className="text-sm text-neutral-400 mb-3 uppercase tracking-wider">Brand Personality</h3>
+                <div className="flex gap-2 flex-wrap">
+                  {result.personality.map((trait) => (
+                    <Badge key={trait} variant="outline" className="px-3 py-1.5 bg-neutral-900 border-neutral-800 text-neutral-300 text-sm">
+                      {trait}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              {/* Personality Spectrum */}
+              <div>
+                <h3 className="text-sm text-neutral-400 mb-3 uppercase tracking-wider">Brand Spectrum</h3>
+                <Card className="bg-neutral-900 border-neutral-800">
+                  <CardContent className="p-4 space-y-3">
+                    {result.sliderSnapshot.map((s, i) => (
+                      <div key={i}>
+                        <div className="flex justify-between text-[10px] sm:text-xs text-neutral-500 mb-1">
+                          <span>{s.label[0]}</span>
+                          <span>{s.label[1]}</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-neutral-800 rounded-full relative">
+                          <div
+                            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-purple-500 rounded-full"
+                            style={{ left: `calc(${s.value}% - 6px)` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2 pb-8">
+                <Button
+                  onClick={handleRegenerate}
+                  disabled={generating}
+                  variant="secondary"
+                  className="flex-1 bg-neutral-800 text-white font-semibold py-3 h-auto rounded-xl hover:bg-neutral-700 transition-colors disabled:opacity-50"
+                >
+                  {generating ? "..." : "🔄 Regenerate"}
+                </Button>
+                <Button
+                  onClick={reset}
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 h-auto rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-purple-500/20 border-0"
+                >
+                  🍫 New Brand
+                </Button>
               </div>
             </div>
-
-            {/* Personality Spectrum */}
-            <div>
-              <h3 className="text-sm text-neutral-400 mb-3 uppercase tracking-wider">Brand Spectrum</h3>
-              <div className="bg-neutral-900 rounded-xl p-4 border border-neutral-800 space-y-3">
-                {result.sliderSnapshot.map((s, i) => (
-                  <div key={i}>
-                    <div className="flex justify-between text-[10px] sm:text-xs text-neutral-500 mb-1">
-                      <span>{s.label[0]}</span>
-                      <span>{s.label[1]}</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-neutral-800 rounded-full relative">
-                      <div
-                        className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-purple-500 rounded-full"
-                        style={{ left: `calc(${s.value}% - 6px)` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3 pt-2 pb-8">
-              <button
-                onClick={handleRegenerate}
-                disabled={generating}
-                className="flex-1 bg-neutral-800 text-white font-semibold py-3 rounded-xl hover:bg-neutral-700 transition-colors disabled:opacity-50"
-              >
-                {generating ? "..." : "🔄 Regenerate"}
-              </button>
-              <button
-                onClick={reset}
-                className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl sm:hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer shadow-md shadow-purple-500/20"
-              >
-                🍫 New Brand
-              </button>
-            </div>
-          </div>
+          </StepTransition>
         )}
       </div>
     </main>
