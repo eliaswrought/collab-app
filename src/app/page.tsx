@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -312,8 +312,36 @@ export default function Home() {
   });
   const [result, setResult] = useState<BrandResult | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [restored, setRestored] = useState(false);
 
   const totalSteps = 6;
+
+  // Restore last session from localStorage
+  useEffect(() => {
+    try {
+      const savedSession = localStorage.getItem("logotruffle_session");
+      if (savedSession) {
+        const session = JSON.parse(savedSession);
+        if (session.inputs) setInputs(session.inputs);
+        if (session.result) {
+          setResult(session.result);
+          loadGoogleFonts([session.result.fonts.heading, session.result.fonts.body]);
+          setStep(session.step ?? totalSteps);
+        } else if (session.step) {
+          setStep(session.step);
+        }
+      }
+    } catch {}
+    setRestored(true);
+  }, []);
+
+  // Persist session to localStorage on changes
+  useEffect(() => {
+    if (!restored) return;
+    try {
+      localStorage.setItem("logotruffle_session", JSON.stringify({ inputs, result, step }));
+    } catch {}
+  }, [inputs, result, step, restored]);
 
   const updateSlider = useCallback((index: number, value: number) => {
     setInputs(prev => {
@@ -371,6 +399,7 @@ export default function Home() {
       audiences: [],
       sliders: DEFAULT_SLIDERS.map(s => ({ ...s })),
     });
+    try { localStorage.removeItem("logotruffle_session"); } catch {}
   };
 
   return (
