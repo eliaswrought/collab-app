@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
-import { Palette, TextAa, MaskHappy, Sliders, Images, Globe, ArrowsClockwise, Shuffle, CaretDown, ArrowDown, Check, Leaf, Shapes } from "@phosphor-icons/react";
+import { Palette, TextAa, MaskHappy, Sliders, Images, Globe, ArrowsClockwise, Shuffle, CaretDown, ArrowDown, Check, Leaf, Shapes, ChatText, PencilSimple, Eye, ShareNetwork, Export } from "@phosphor-icons/react";
+import { getFlag } from "@/lib/flags";
 
 /* ───────── Types ───────── */
 interface SliderValue {
@@ -536,6 +537,9 @@ export default function Home() {
   const [logoVariants, setLogoVariants] = useState<string[]>([]);
   const [selectedVariant, setSelectedVariant] = useState<number | null>(null);
   const [variantLoadState, setVariantLoadState] = useState<Record<number, "loading" | "loaded" | "error">>({});
+  const [customPrompt, setCustomPrompt] = useState<string | null>(null);
+  const [shareToast, setShareToast] = useState(false);
+  const [flagsReady, setFlagsReady] = useState(false);
 
   const totalSteps = 7;
 
@@ -558,6 +562,29 @@ export default function Home() {
       }
     } catch {}
     setRestored(true);
+    setFlagsReady(true);
+
+    // Shareable link: decode ?brand= param
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const brandParam = params.get("brand");
+      if (brandParam) {
+        const decoded: BrandInputs = JSON.parse(atob(brandParam));
+        if (decoded.name) {
+          setInputs(decoded);
+          // Auto-generate
+          setTimeout(() => {
+            const brand = generateBrand(decoded);
+            loadGoogleFonts([brand.fonts.heading, brand.fonts.body]);
+            setResult(brand);
+            saveBrand(brand);
+            setStep(totalSteps);
+          }, 500);
+          // Clean URL
+          window.history.replaceState({}, "", window.location.pathname);
+        }
+      }
+    } catch {}
   }, []);
 
   // Persist session to localStorage on changes
@@ -596,9 +623,11 @@ export default function Home() {
     return `${style} minimal logo for "${brand.name}" — a ${inputs.industry} brand. Style: flat design, vector, clean, professional, white background. Personality: ${brand.personality.join(", ")}. Colors inspired by: ${colorDesc}. No text in the image.`;
   };
 
+  const getEffectivePrompt = (brand: BrandResult) => customPrompt || buildPrompt(brand);
+
   const buildPollinationsUrl = (brand: BrandResult, seed?: number) => {
     const s = seed ?? Math.floor(Math.random() * 1000000);
-    return `https://image.pollinations.ai/prompt/${encodeURIComponent(buildPrompt(brand))}?width=512&height=512&nologo=true&seed=${s}`;
+    return `https://image.pollinations.ai/prompt/${encodeURIComponent(getEffectivePrompt(brand))}?width=512&height=512&nologo=true&seed=${s}`;
   };
 
   const generateVariants = async (brand: BrandResult) => {
@@ -612,7 +641,7 @@ export default function Home() {
       const res = await fetch("/api/generate-logo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: buildPrompt(brand), n: 4 }),
+        body: JSON.stringify({ prompt: getEffectivePrompt(brand), n: 4 }),
       });
 
       if (res.ok) {
@@ -904,6 +933,7 @@ export default function Home() {
             <div className="w-full">
               {/* ── Style Tile Hero ── */}
               <div
+                id="style-tile-hero"
                 className="min-h-[100dvh] flex flex-col items-center justify-center text-center px-4 py-12 -mx-4 sm:-mx-6 rounded-2xl relative overflow-hidden"
                 style={{ background: `linear-gradient(to bottom, ${result.colors[0]?.hex}12 0%, transparent 60%)` }}
               >
@@ -1104,6 +1134,44 @@ export default function Home() {
                         );
                       })}
                     </div>
+                    {/* Prompt Editor (feature-flagged) */}
+                    {flagsReady && getFlag('prompt-editor') && result && (
+                      <div className="mt-4 border border-neutral-800 rounded-xl p-3 bg-neutral-900/80">
+                        <button
+                          onClick={() => {
+                            if (customPrompt === null) setCustomPrompt(buildPrompt(result));
+                          }}
+                          className="flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 mb-2"
+                        >
+                          <PencilSimple size={14} /> {customPrompt !== null ? "Edit Prompt" : "Show & Edit Prompt"}
+                        </button>
+                        {customPrompt !== null && (
+                          <div className="space-y-2">
+                            <textarea
+                              value={customPrompt}
+                              onChange={(e) => setCustomPrompt(e.target.value)}
+                              className="w-full bg-neutral-800 border border-neutral-700 rounded-lg p-2 text-xs text-neutral-300 resize-none h-24 focus:border-purple-500 outline-none"
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={() => { if (result) generateVariants(result); }}
+                                className="flex-1 text-xs bg-purple-600 hover:bg-purple-500 text-white py-1.5 h-auto rounded-lg border-0"
+                              >
+                                Regenerate with Custom Prompt
+                              </Button>
+                              <Button
+                                onClick={() => setCustomPrompt(null)}
+                                variant="ghost"
+                                className="text-xs text-neutral-500 py-1.5 h-auto"
+                              >
+                                Reset
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {selectedVariant !== null && (
                       <Button
                         onClick={handleMoreLikeThis}
@@ -1115,7 +1183,175 @@ export default function Home() {
                     )}
                   </AccordionSection>
                 )}
+
+                {/* Accordion: Brand Voice (feature-flagged) */}
+                {flagsReady && getFlag('brand-voice') && (() => {
+                  const s = inputs.sliders;
+                  const casualFormal = s[4].value / 100;
+                  const loudQuiet = s[5].value / 100;
+                  const playfulSerious = s[2].value / 100;
+                  const isCasual = casualFormal < 0.4;
+                  const isBold = loudQuiet < 0.4;
+                  const isPlayful = playfulSerious < 0.4;
+                  const tone = isCasual ? "friendly" : "professional";
+                  const energy = isBold ? "bold" : "refined";
+                  const ind = inputs.industry.toLowerCase();
+                  const val0 = (inputs.values[0] || "quality").toLowerCase();
+                  const aud0 = inputs.audiences[0] || "people";
+
+                  const taglines = [
+                    isBold ? `${result.name}. ${result.personality[0] || "Bold"} by design.` : `${result.name} — where ${val0} meets intention.`,
+                    isPlayful ? `${result.name}: making ${ind} actually fun.` : `${result.name}. ${result.personality[1] || "Trusted"}. Always.`,
+                    isCasual ? `Hey, it's ${result.name}. Let's build something ${result.personality[0]?.toLowerCase() || "great"}.` : `${result.name} — ${val0} for ${aud0.toLowerCase()}.`,
+                  ];
+
+                  const pitch = isCasual
+                    ? `${result.name} is a ${tone} ${ind} brand built for ${aud0.toLowerCase()}. We believe ${val0} shouldn't be complicated — so we made it ${energy} and accessible.${inputs.description ? ` ${inputs.description}` : ""}`
+                    : `${result.name} is a ${energy} presence in the ${ind} space, designed to serve ${aud0.toLowerCase()} who value ${val0}. Our approach combines ${result.personality.slice(0, 2).join(" and ").toLowerCase()} thinking to deliver results that matter.${inputs.description ? ` ${inputs.description}` : ""}`;
+
+                  const bio = isCasual
+                    ? `${result.personality[0] || "Bold"} ${ind} brand 🚀 | ${val0.charAt(0).toUpperCase() + val0.slice(1)}-first | Built for ${aud0.toLowerCase()} | ${result.tagline}`
+                    : `${result.personality[0] || "Professional"} ${ind} solutions for ${aud0.toLowerCase()} | Driven by ${val0} | ${result.tagline}`;
+
+                  const sig = `${isCasual ? "Cheers" : "Best regards"},\nThe ${result.name} Team\n${result.tagline}`;
+
+                  return (
+                    <AccordionSection icon={<ChatText size={18} weight="duotone" />} title="Brand Voice" defaultOpen={false}>
+                      <div className="space-y-5">
+                        <div>
+                          <p className="text-xs text-purple-400 font-medium uppercase tracking-wider mb-2">Tagline Variations</p>
+                          {taglines.map((t, i) => (
+                            <p key={i} className="text-sm text-neutral-300 mb-1.5 italic">&ldquo;{t}&rdquo;</p>
+                          ))}
+                        </div>
+                        <div>
+                          <p className="text-xs text-purple-400 font-medium uppercase tracking-wider mb-2">Elevator Pitch</p>
+                          <p className="text-sm text-neutral-300 leading-relaxed">{pitch}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-purple-400 font-medium uppercase tracking-wider mb-2">Social Media Bio</p>
+                          <p className="text-sm text-neutral-300">{bio}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-purple-400 font-medium uppercase tracking-wider mb-2">Email Signature</p>
+                          <p className="text-sm text-neutral-300 whitespace-pre-line">{sig}</p>
+                        </div>
+                      </div>
+                    </AccordionSection>
+                  );
+                })()}
+
+                {/* Accordion: Accessibility Checker (feature-flagged) */}
+                {flagsReady && getFlag('a11y-checker') && (() => {
+                  function hexToRgb(hex: string): [number, number, number] {
+                    const h = hex.replace("#", "");
+                    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+                  }
+                  function luminance(r: number, g: number, b: number): number {
+                    const [rs, gs, bs] = [r, g, b].map((c) => {
+                      const s = c / 255;
+                      return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+                    });
+                    return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+                  }
+                  function contrastRatio(hex1: string, hex2: string): number {
+                    const l1 = luminance(...hexToRgb(hex1));
+                    const l2 = luminance(...hexToRgb(hex2));
+                    const lighter = Math.max(l1, l2);
+                    const darker = Math.min(l1, l2);
+                    return (lighter + 0.05) / (darker + 0.05);
+                  }
+
+                  const colors = result.colors;
+                  const primary = colors.find(c => c.role === "Primary")?.hex || colors[0]?.hex;
+                  const bg = colors.find(c => c.role === "Background")?.hex || "#FFFFFF";
+                  const text = colors.find(c => c.role === "Text")?.hex || "#000000";
+                  const accent = colors.find(c => c.role === "Accent")?.hex || colors[2]?.hex;
+
+                  const pairs = [
+                    { name: "Primary on Background", fg: primary, bg: bg },
+                    { name: "Text on Primary", fg: text, bg: primary },
+                    { name: "Text on Background", fg: text, bg: bg },
+                    { name: "Accent on Background", fg: accent, bg: bg },
+                  ];
+
+                  return (
+                    <AccordionSection icon={<Eye size={18} weight="duotone" />} title="Accessibility" defaultOpen={false}>
+                      <div className="space-y-3">
+                        {pairs.map((pair) => {
+                          const ratio = contrastRatio(pair.fg, pair.bg);
+                          const aaNormal = ratio >= 4.5;
+                          const aaaNormal = ratio >= 7;
+                          const aaLarge = ratio >= 3;
+                          const aaaLarge = ratio >= 4.5;
+                          return (
+                            <div key={pair.name} className="p-3 rounded-lg bg-neutral-900 border border-neutral-800">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm text-neutral-300">{pair.name}</span>
+                                <span className="text-xs font-mono text-neutral-500">{ratio.toFixed(2)}:1</span>
+                              </div>
+                              <div className="flex items-center gap-1 mb-1">
+                                <div className="w-5 h-5 rounded" style={{ backgroundColor: pair.fg }} />
+                                <span className="text-[10px] text-neutral-500">on</span>
+                                <div className="w-5 h-5 rounded border border-neutral-700" style={{ backgroundColor: pair.bg }} />
+                              </div>
+                              <div className="flex gap-1.5 flex-wrap mt-2">
+                                <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${aaNormal ? "border-green-600 text-green-400" : "border-red-600 text-red-400"}`}>AA Normal {aaNormal ? "✓" : "✗"}</Badge>
+                                <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${aaaNormal ? "border-green-600 text-green-400" : "border-red-600 text-red-400"}`}>AAA Normal {aaaNormal ? "✓" : "✗"}</Badge>
+                                <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${aaLarge ? "border-green-600 text-green-400" : "border-red-600 text-red-400"}`}>AA Large {aaLarge ? "✓" : "✗"}</Badge>
+                                <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${aaaLarge ? "border-green-600 text-green-400" : "border-red-600 text-red-400"}`}>AAA Large {aaaLarge ? "✓" : "✗"}</Badge>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </AccordionSection>
+                  );
+                })()}
               </div>
+
+              {/* ── Feature-flagged Action Buttons ── */}
+              {flagsReady && getFlag('shareable-link') && (
+                <div className="mt-6 relative">
+                  <Button
+                    onClick={() => {
+                      const encoded = btoa(JSON.stringify(inputs));
+                      const url = `${window.location.origin}${window.location.pathname}?brand=${encoded}`;
+                      navigator.clipboard.writeText(url);
+                      setShareToast(true);
+                      setTimeout(() => setShareToast(false), 2000);
+                    }}
+                    className="w-full bg-gradient-to-r from-purple-600 to-indigo-500 text-white font-semibold py-3 h-auto rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-purple-500/20 border-0"
+                  >
+                    <ShareNetwork size={18} weight="duotone" className="inline mr-1.5" />Copy Shareable Link
+                  </Button>
+                  {shareToast && (
+                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-green-600 text-white text-xs px-3 py-1.5 rounded-full animate-in fade-in">
+                      ✓ Link copied to clipboard!
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {flagsReady && getFlag('export-kit') && (
+                <div className="mt-3">
+                  <Button
+                    onClick={async () => {
+                      const { default: html2canvas } = await import("html2canvas-pro");
+                      const el = document.getElementById("style-tile-hero");
+                      if (!el) return;
+                      const canvas = await html2canvas(el, { backgroundColor: "#0a0a0a", useCORS: true });
+                      const link = document.createElement("a");
+                      link.download = `${result.name.toLowerCase().replace(/\s+/g, "-")}-brand-kit.png`;
+                      link.href = canvas.toDataURL("image/png");
+                      link.click();
+                    }}
+                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-semibold py-3 h-auto rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-md shadow-emerald-500/20 border-0"
+                  >
+                    <Export size={18} weight="duotone" className="inline mr-1.5" />Export Brand Kit (PNG)
+                  </Button>
+                </div>
+              )}
 
               {/* ── Action Buttons ── */}
               <div className="mt-8 space-y-3 pb-8">
