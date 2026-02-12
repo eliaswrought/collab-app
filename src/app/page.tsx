@@ -964,13 +964,21 @@ export default function Home() {
                 <Card className="bg-neutral-900 border-neutral-800">
                   <CardContent className="p-4 space-y-4">
                     {inputs.sliders.map((s, i) => (
-                      <PersonalitySlider
-                        key={i}
-                        slider={s}
-                        onChange={(v) => {
-                          updateSlider(i, v);
-                        }}
-                      />
+                      <div key={i} className="mb-4">
+                        <div className="flex justify-between text-xs sm:text-sm text-neutral-400 mb-2">
+                          <span>{s.label[0]}</span>
+                          <span>{s.label[1]}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={s.value}
+                          onChange={(e) => updateSlider(i, Number(e.target.value))}
+                          className="w-full h-3 appearance-none rounded-full bg-neutral-800 cursor-pointer accent-purple-500 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-purple-400 [&::-webkit-slider-thumb]:to-pink-500 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-neutral-900 [&::-webkit-slider-thumb]:shadow-lg"
+                        />
+                      </div>
                     ))}
                     <Button
                       onClick={() => {
