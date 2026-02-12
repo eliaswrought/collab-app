@@ -392,7 +392,7 @@ export default function Home() {
             <button
               onClick={() => inputs.name.trim() && setStep(1)}
               disabled={!inputs.name.trim()}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl disabled:opacity-30 hover:opacity-90 transition-opacity"
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 active:scale-95 transition-all cursor-pointer"
             >
               Next →
             </button>
@@ -428,7 +428,7 @@ export default function Home() {
             <button
               onClick={() => inputs.values.length > 0 && setStep(3)}
               disabled={inputs.values.length === 0}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl disabled:opacity-30 hover:opacity-90 transition-opacity"
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 active:scale-95 transition-all cursor-pointer"
             >
               Next →
             </button>
@@ -446,7 +446,7 @@ export default function Home() {
             <button
               onClick={() => inputs.audiences.length > 0 && setStep(4)}
               disabled={inputs.audiences.length === 0}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl disabled:opacity-30 hover:opacity-90 transition-opacity"
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 active:scale-95 transition-all cursor-pointer"
             >
               Next →
             </button>
